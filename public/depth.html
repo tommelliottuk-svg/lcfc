@@ -54,10 +54,13 @@
 
   .card{
     background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
-    padding:14px 16px;position:relative;cursor:pointer;
+    padding:14px 16px;position:relative;cursor:pointer;transition:border-color .12s, transform .12s;
   }
   .card:hover{border-color:var(--gold-dim);}
   .card.editing{cursor:default;border-color:var(--gold);}
+  .card.dragging{opacity:0.35;}
+  .card.drag-over{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset;}
+  .card[draggable="true"]:not(.editing){cursor:grab;}
   .card.vacant{
     background:transparent;border:1px dashed var(--border);color:var(--muted-2);
     display:flex;align-items:center;justify-content:center;text-align:center;min-height:88px;
@@ -170,6 +173,7 @@
     <h3>Basis &amp; limitations</h3>
     <ul>
       <li>This page is fully editable and saves to your own storage — click any card, filled or vacant, to edit or clear it. Changes persist across sessions in the same way as the Squad Book Value and PSR Ledger tools.</li>
+      <li><strong style="color:var(--text);">Drag any card onto another</strong> — within a row or across different position rows — to swap who occupies each slot. The "1st/2nd/3rd choice" label stays fixed to the slot; only the player data moves, so dragging your 2nd-choice left-back onto the 1st-choice slot promotes them and demotes the other player in one move. Works with vacant slots too.</li>
       <li>CA (Current Ability) is FM's internal ability rating, useful for relative squad-strength comparison but not a real-world scouting metric.</li>
       <li>Several players in the Out list are the same names tracked in the Squad Book Value tool. Worth checking whether any need a disposal entry in the PSR Ledger once fees are confirmed, since their book values keep amortising until recorded as sold.</li>
       <li>Vacant slots reflect depth-chart placeholders for uncovered positions/roles, not an assertion that no player can play there.</li>
@@ -363,13 +367,13 @@ function slotCard(posIdx, slotIdx, slot){
   }
 
   if(slot.vacant){
-    return `<div class="card vacant" data-key="${key}">${slot.label || 'Vacant'}<br><span style="font-size:9px;">${slot.choice} choice — TBC</span></div>`;
+    return `<div class="card vacant" data-key="${key}" draggable="true">${slot.label || 'Vacant'}<br><span style="font-size:9px;">${slot.choice} choice — TBC</span></div>`;
   }
 
   const statusClass = 'status-' + (slot.status || 'TBC');
   const altPos = slot.alt ? ` <span style="color:var(--muted-2);">(${slot.alt})</span>` : '';
   return `
-    <div class="card" data-key="${key}">
+    <div class="card" data-key="${key}" draggable="true">
       <span class="choice-badge"><span>${slot.choice} choice${slot.squadNo ? ' · #'+slot.squadNo : ''}</span></span>
       <div class="card-wage">${fmtGBP(slot.wage)}</div>
       <div class="card-name">${slot.name}${slot.captain ? ' <span style="color:var(--gold);font-size:11px;">('+slot.captain+')</span>' : ''}</div>
@@ -496,6 +500,50 @@ function wireEvents(){
     btn.addEventListener('click', async () => {
       if(!confirm('Remove this entire position row?')) return;
       depthData.positions.splice(parseInt(btn.dataset.removePos), 1);
+      editingKey = null;
+      await persist();
+      render();
+    });
+  });
+
+  // drag and drop — reorder/swap slot contents within or across position rows
+  let dragSourceKey = null;
+  document.querySelectorAll('.card[draggable="true"]').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      dragSourceKey = card.dataset.key;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragSourceKey);
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.card.drag-over').forEach(c => c.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if(card.dataset.key !== dragSourceKey) card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const targetKey = card.dataset.key;
+      const sourceKey = dragSourceKey || e.dataTransfer.getData('text/plain');
+      if(!sourceKey || sourceKey === targetKey) return;
+
+      const [, srcPos, srcSlot] = sourceKey.split('-');
+      const [, tgtPos, tgtSlot] = targetKey.split('-');
+      const srcSlots = depthData.positions[srcPos].slots;
+      const tgtSlots = depthData.positions[tgtPos].slots;
+      const srcData = srcSlots[srcSlot];
+      const tgtData = tgtSlots[tgtSlot];
+
+      // swap everything except the "choice" label, which stays attached to the position/rank
+      const srcChoice = srcData.choice, tgtChoice = tgtData.choice;
+      srcSlots[srcSlot] = { ...tgtData, choice: srcChoice };
+      tgtSlots[tgtSlot] = { ...srcData, choice: tgtChoice };
+
       editingKey = null;
       await persist();
       render();
