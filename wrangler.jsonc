@@ -10,7 +10,7 @@
   "kv_namespaces": [
     {
       "binding": "SQUAD_KV",
-      "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+      "id": "7e546aba656242f79de2549c7488d465"
     }
   ],
   "observability": {
