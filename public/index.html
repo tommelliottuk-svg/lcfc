@@ -116,6 +116,11 @@
   <div class="top-actions">
     <button class="mini" id="resetBtn">Reset to uploaded data</button>
     <button class="mini" id="addPlayerBtn">+ Add player</button>
+    <label style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-left:4px;">
+      <input type="checkbox" id="showSoldToggle" style="width:auto;">
+      Show sold/departed players
+    </label>
+    <span id="soldCountNote" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted-2);align-self:center;"></span>
   </div>
 
   <div class="panel">
@@ -152,6 +157,7 @@
       <li>Players showing £0 cost are free transfers or academy graduates — any sale of these players is recognised as pure profit against PSR, which is correct treatment, not a data gap.</li>
       <li>Renewal contract periods are re-amortised over the new remaining term from the point of signing, per standard EFL/Premier League club accounting treatment. No additional capitalised cost is assumed on renewal unless you add one manually.</li>
       <li>Edits you make here are saved to Cloudflare KV via your Worker's API — not the browser — so they're accessible from any device on the same URL, not just where you made the change. There's no login on this yet, so anyone with the URL can read and edit it; see the earlier note on adding Cloudflare Access if that matters. Use "Reset to uploaded data" to discard edits and reload the original export.</li>
+      <li><strong style="color:var(--text);">Recording a departure:</strong> add the player here with their full contract history, then record the sale in the PSR Ledger — don't delete them afterwards. Sold players are automatically excluded from the totals and squad list above (their contract data is still needed for historical season calculations); tick "Show sold/departed players" to see them, frozen at their book value on the sale date rather than continuing to accrue as if still contracted.</li>
     </ul>
   </div>
 </div>
@@ -167,6 +173,8 @@ function fmtDateInput(d){ return d.toISOString().slice(0,10); }
 const ORIGINAL_DATA = {"Abdul Fatawu": {"fee": 14043360, "signDate": "2024-07-01", "initialLength": 5.0, "renewals": []}, "Asmir Begovi\u0107": {"fee": 0, "signDate": "2025-07-29", "initialLength": 0.92, "renewals": []}, "Bade Aluko": {"fee": 0, "signDate": "2023-07-01", "initialLength": 2.0, "renewals": [{"date": "2025-06-30", "newLength": 3.0, "extraCost": 0}]}, "Ben Nelson": {"fee": 0, "signDate": "2022-02-22", "initialLength": 2.35, "renewals": [{"date": "2023-12-08", "newLength": 3.56, "extraCost": 0}]}, "Bobby De Cordova-Reid": {"fee": 0, "signDate": "2024-07-06", "initialLength": 2.98, "renewals": []}, "Caleb Okoli": {"fee": 11234688, "signDate": "2024-07-09", "initialLength": 4.97, "renewals": []}, "Fran Vieites": {"fee": 0, "signDate": "2025-09-06", "initialLength": 1.81, "renewals": []}, "Hamza Choudhury": {"fee": 0, "signDate": "2023-06-05", "initialLength": 1.07, "renewals": [{"date": "2023-09-27", "newLength": 3.76, "extraCost": 0}]}, "Harry Souttar": {"fee": 15000000, "signDate": "2023-01-31", "initialLength": 5.41, "renewals": []}, "Harry Winks": {"fee": 10000000, "signDate": "2023-07-01", "initialLength": 3.0, "renewals": [{"date": "2024-07-01", "newLength": 3.0, "extraCost": 0}]}, "Jake Evans": {"fee": 0, "signDate": "2024-07-01", "initialLength": 2.0, "renewals": [{"date": "2025-10-20", "newLength": 2.69, "extraCost": 0}]}, "Jakub Stolarczyk": {"fee": 0, "signDate": "2022-08-15", "initialLength": 3.87, "renewals": [{"date": "2025-06-09", "newLength": 2.06, "extraCost": 0}]}, "Jannik Vestergaard": {"fee": 14000000, "signDate": "2021-08-13", "initialLength": 2.88, "renewals": [{"date": "2024-06-07", "newLength": 3.06, "extraCost": 0}]}, "Jayden Joseph": {"fee": 0, "signDate": "2022-07-01", "initialLength": 2.0, "renewals": [{"date": "2024-06-30", "newLength": 3.0, "extraCost": 0}]}, "Louis Page": {"fee": 0, "signDate": "2024-07-01", "initialLength": 2.0, "renewals": [{"date": "2025-09-22", "newLength": 2.77, "extraCost": 0}]}, "Luke Thomas": {"fee": 0, "signDate": "2020-08-25", "initialLength": 5.85, "renewals": [{"date": "2025-09-19", "newLength": 3.78, "extraCost": 0}]}, "Nathan Opoku": {"fee": 0, "signDate": "2023-01-31", "initialLength": 3.41, "renewals": [{"date": "2026-03-12", "newLength": 1.3, "extraCost": 0}]}, "Oliver Skipp": {"fee": 21000000, "signDate": "2024-08-19", "initialLength": 4.86, "renewals": []}, "Sammy Braybrooke": {"fee": 0, "signDate": "2023-02-16", "initialLength": 3.37, "renewals": [{"date": "2025-06-09", "newLength": 2.06, "extraCost": 0}]}, "Silko Thomas": {"fee": 0, "signDate": "2023-08-25", "initialLength": 1.85, "renewals": [{"date": "2025-06-09", "newLength": 1.06, "extraCost": 0}]}, "Stephy Mavididi": {"fee": 6481551, "signDate": "2023-07-31", "initialLength": 4.92, "renewals": []}, "Tom Wilson-Brown": {"fee": 0, "signDate": "2021-07-01", "initialLength": 2.0, "renewals": [{"date": "2022-12-20", "newLength": 2.53, "extraCost": 0}, {"date": "2023-02-02", "newLength": 3.41, "extraCost": 0}, {"date": "2026-06-30", "newLength": 1.0, "extraCost": 0}]}, "Victor Kristiansen": {"fee": 18018711, "signDate": "2023-01-20", "initialLength": 5.44, "renewals": []}, "Will Alves": {"fee": 0, "signDate": "2021-07-01", "initialLength": 2.0, "renewals": [{"date": "2022-10-02", "newLength": 2.74, "extraCost": 0}, {"date": "2024-08-09", "newLength": 3.89, "extraCost": 0}]}, "Wout Faes": {"fee": 12000000, "signDate": "2022-09-01", "initialLength": 4.83, "renewals": []}, "Woyo Coulibaly": {"fee": 3000000, "signDate": "2025-01-15", "initialLength": 4.45, "renewals": []}};
 
 let squadData = {};
+let soldPlayers = {}; // name -> { date, fee, bookValue }
+let showSold = false;
 let sortKey = 'bookvalue';
 let sortDir = -1;
 let selectedPlayer = null;
@@ -192,9 +200,9 @@ function computeSchedule(cost, signDate, initialLength, renewals, valuationDate)
   return { segments, bookValue, currentAnnualCharge: curCharge, remainingYears, valuationDate };
 }
 
-function playerSchedule(p){
+function playerSchedule(p, valuationDate){
   const renewals = (p.renewals||[]).map(r => ({ date: parseDate(r.date), newLength: r.newLength, extraCost: r.extraCost||0 }));
-  return computeSchedule(p.fee, parseDate(p.signDate), p.initialLength, renewals, today);
+  return computeSchedule(p.fee, parseDate(p.signDate), p.initialLength, renewals, valuationDate || today);
 }
 
 async function init(){
@@ -208,6 +216,16 @@ async function init(){
     }
   } catch(e){ /* no saved data yet, or running locally without the Function */ }
   squadData = stored || JSON.parse(JSON.stringify(ORIGINAL_DATA));
+
+  try {
+    const psrRes = await fetch('/api/psr');
+    if(psrRes.ok){
+      const psrJson = await psrRes.json();
+      soldPlayers = {};
+      (psrJson.transactions || []).forEach(t => { soldPlayers[t.player] = t; });
+    }
+  } catch(e){ /* PSR ledger not set up yet — fine, just show everyone as active */ }
+
   render();
 }
 
@@ -248,7 +266,8 @@ document.getElementById('addPlayerBtn').addEventListener('click', async () => {
 
 function computeTotals(){
   let totalCost = 0, totalBV = 0, totalWage = 0, count = 0, fullyAmortised = 0;
-  Object.values(squadData).forEach(p => {
+  Object.entries(squadData).forEach(([name, p]) => {
+    if(soldPlayers[name]) return; // excluded from active squad totals — see PSR Ledger
     const s = playerSchedule(p);
     totalCost += p.fee;
     totalBV += s.bookValue;
@@ -256,7 +275,7 @@ function computeTotals(){
     count++;
     if(s.bookValue <= 0.5) fullyAmortised++;
   });
-  return { totalCost, totalBV, totalWage, count, fullyAmortised };
+  return { totalCost, totalBV, totalWage, count, fullyAmortised, soldCount: Object.keys(soldPlayers).length };
 }
 
 function renderTotals(){
@@ -270,10 +289,13 @@ function renderTotals(){
 }
 
 function sortedEntries(){
-  const entries = Object.entries(squadData).map(([name, p]) => {
-    const s = playerSchedule(p);
-    return { name, p, s };
-  });
+  const entries = Object.entries(squadData)
+    .filter(([name]) => showSold || !soldPlayers[name])
+    .map(([name, p]) => {
+      const sold = soldPlayers[name];
+      const s = sold ? playerSchedule(p, parseDate(sold.date)) : playerSchedule(p);
+      return { name, p, s, sold };
+    });
   entries.sort((a,b) => {
     let av, bv;
     switch(sortKey){
@@ -294,12 +316,13 @@ function sortedEntries(){
 function renderTable(){
   const tbody = document.getElementById('squadBody');
   const entries = sortedEntries();
-  tbody.innerHTML = entries.map(({name, p, s}) => {
+  tbody.innerHTML = entries.map(({name, p, s, sold}) => {
     const isFree = p.fee === 0;
-    const remLabel = s.bookValue <= 0.5 ? 'Fully amortised' : `${Math.floor(s.remainingYears)}y ${Math.round((s.remainingYears - Math.floor(s.remainingYears))*12)}m`;
+    const remLabel = sold ? 'Sold' : (s.bookValue <= 0.5 ? 'Fully amortised' : `${Math.floor(s.remainingYears)}y ${Math.round((s.remainingYears - Math.floor(s.remainingYears))*12)}m`);
+    const dim = sold ? 'opacity:0.55;' : '';
     return `
-      <tr class="${selectedPlayer===name?'selected':''}" data-player="${name.replace(/"/g,'&quot;')}">
-        <td><span class="player-name">${name}</span>${isFree?'<span class="free-tag">free/academy</span>':''}</td>
+      <tr class="${selectedPlayer===name?'selected':''}" style="${dim}" data-player="${name.replace(/"/g,'&quot;')}">
+        <td><span class="player-name">${name}</span>${isFree?'<span class="free-tag">free/academy</span>':''}${sold?`<span class="free-tag" style="color:var(--clay);">SOLD ${fmtDate(parseDate(sold.date))}</span>`:''}</td>
         <td>${fmtGBP(p.fee)}</td>
         <td>${fmtDate(parseDate(p.signDate))}</td>
         <td>${(p.renewals||[]).length ? `<span class="renewal-count">${p.renewals.length}×</span>` : '—'}</td>
@@ -531,7 +554,15 @@ function render(){
   renderTotals();
   renderTable();
   renderDetail();
+  const soldCount = Object.keys(soldPlayers).length;
+  const note = document.getElementById('soldCountNote');
+  if(note) note.textContent = soldCount ? `(${soldCount} sold player${soldCount===1?'':'s'} excluded from totals — recorded in PSR Ledger)` : '';
 }
+
+document.getElementById('showSoldToggle').addEventListener('change', (e) => {
+  showSold = e.target.checked;
+  renderTable();
+});
 
 init();
 </script>
