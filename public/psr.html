@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LCFC PSR Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1720; --panel:#161F2A; --panel-2:#1B2530; --border:#28333F;
+    --text:#E8EDF2; --muted:#8B98A5; --muted-2:#5E6B78;
+    --gold:#C99A4B; --gold-dim:#8A7043; --teal:#4FA88F; --clay:#C1584A;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;}
+  .wrap{max-width:1240px;margin:0 auto;padding:32px 24px 64px;}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:600;margin:0;letter-spacing:-0.01em;}
+  .subhead{color:var(--muted);font-size:13px;max-width:600px;margin-top:6px;}
+  .nav-link{color:var(--gold);text-decoration:none;font-size:11px;font-family:'IBM Plex Mono',monospace;}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+  .panel + .panel{margin-top:20px;}
+  .panel h2{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 14px;display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  .panel h2 .title-flex{display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:"";width:3px;height:14px;background:var(--gold);display:inline-block;}
+  .panel h2 .hint-small{font-family:'Inter',sans-serif;font-size:11px;color:var(--muted-2);text-transform:none;letter-spacing:0;font-weight:400;}
+
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .field{margin-bottom:12px;}
+  .field-row{display:grid;gap:10px;}
+  input[type="text"],input[type="number"],input[type="date"],select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:7px 9px;border-radius:var(--radius);
+  }
+  input:focus,select:focus{outline:1px solid var(--gold);border-color:var(--gold);}
+
+  button.mini{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 12px;border-radius:var(--radius);font-family:'IBM Plex Mono',monospace;font-size:11.5px;cursor:pointer;}
+  button.mini:hover{border-color:var(--gold);color:var(--gold);}
+  button.primary{background:var(--gold);border:1px solid var(--gold);color:#0F1720;font-weight:600;}
+  button.primary:hover{background:#DDB569;}
+
+  table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  thead th{text-align:right;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:8px 10px;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap;}
+  thead th:first-child, tbody td:first-child{text-align:left;}
+  tbody td{padding:9px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text);}
+  tbody tr:hover{background:rgba(255,255,255,0.02);}
+  .profit{color:var(--teal);}
+  .loss{color:var(--clay);}
+  .remove-btn{background:none;border:none;color:var(--muted-2);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;}
+  .remove-btn:hover{color:var(--clay);}
+
+  .add-tx-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:16px;}
+  @media (max-width:900px){ .add-tx-grid{grid-template-columns:1fr 1fr;} }
+
+  .season-input-table input{width:120px;text-align:right;}
+  .season-input-table td{vertical-align:middle;}
+
+  .verdict-banner{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:16px 20px;border-radius:var(--radius);margin-top:16px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .verdict-banner.pass{background:rgba(79,168,143,0.1);border:1px solid rgba(79,168,143,0.35);}
+  .verdict-banner.fail{background:rgba(193,88,74,0.1);border:1px solid rgba(193,88,74,0.35);}
+  .verdict-banner .big{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;}
+  .verdict-banner.pass .big{color:var(--teal);}
+  .verdict-banner.fail .big{color:var(--clay);}
+  .verdict-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+
+  .threshold-note{font-size:11px;color:var(--muted-2);margin-top:10px;}
+
+  .toast{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal);opacity:0;transition:opacity .3s;margin-left:10px;}
+  .toast.show{opacity:1;}
+
+  .notes{margin-top:20px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:14px;}
+  .notes h3{font-family:'Space Grotesk',sans-serif;font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text);margin:0 0 8px;}
+  .notes ul{margin:0;padding-left:16px;}
+  .notes li{margin-bottom:5px;}
+
+  .empty-state{color:var(--muted-2);font-size:12.5px;text-align:center;padding:24px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">Squad Cost &amp; PSR Tooling — Leicester City</div>
+      <h1>PSR Ledger</h1>
+      <div class="subhead">Player disposals, wage bill, and the rolling three-year Adjusted Earnings Before Tax assessment against the EFL Championship P&amp;S threshold.</div>
+    </div>
+    <a href="/index.html" class="nav-link">← Squad Book Value</a>
+  </header>
+
+  <div class="panel">
+    <h2><span class="title-flex">Record a Disposal<span class="hint-small">book value auto-pulled from the squad tracker at the sale date</span></span></h2>
+    <div class="add-tx-grid">
+      <div class="field"><label>Player</label><select id="txPlayer"></select></div>
+      <div class="field"><label>Sale date</label><input type="date" id="txDate"></div>
+      <div class="field"><label>Sale fee (£)</label><input type="number" id="txFee" min="0" step="50000" placeholder="e.g. 1000000"></div>
+      <div class="field"><label>Book value at sale</label><input type="number" id="txBookValue" min="0" step="1000"></div>
+      <div class="field"><button class="primary mini" id="addTxBtn" style="width:100%;">Add disposal</button></div>
+    </div>
+    <div id="txPreview" style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--muted);"></div>
+
+    <div style="overflow-x:auto;margin-top:16px;">
+      <table id="txTable">
+        <thead><tr><th>Player</th><th>Sale date</th><th>Season</th><th>Sale fee</th><th>Book value</th><th>PSR result</th><th></th></tr></thead>
+        <tbody id="txBody"></tbody>
+      </table>
+      <div class="empty-state" id="txEmpty" style="display:none;">No disposals recorded yet.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="title-flex">Season Inputs<span class="hint-small">wage bill and other P&amp;S lines — leave at 0 until you have real figures</span></span></h2>
+    <div style="overflow-x:auto;">
+      <table class="season-input-table">
+        <thead><tr><th>Season</th><th>Revenue (£)</th><th>Wage bill (£)</th><th>Other opex (£)</th><th>Add-backs (£)</th></tr></thead>
+        <tbody id="seasonInputBody"></tbody>
+      </table>
+    </div>
+    <div class="hint-small" style="margin-top:10px;color:var(--muted-2);">Add-backs cover academy, women's football, community and infrastructure depreciation costs the EFL permits clubs to exclude from the P&amp;S calculation.</div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="title-flex">Squad Cost Ratio (SCMP)<span class="hint-small">EFL League One wage cap — player wages (+ manager costs) as a share of turnover</span></span></h2>
+    <div style="overflow-x:auto;">
+      <table id="scmpTable">
+        <thead><tr><th>Season</th><th>Turnover</th><th>Player wages</th><th>Manager/backroom</th><th>Equity injected</th><th>Threshold</th><th>Allowed spend</th><th>Actual spend</th><th>Headroom</th></tr></thead>
+        <tbody id="scmpBody"></tbody>
+      </table>
+    </div>
+    <div class="threshold-note">
+      Standard League One SCMP is <strong style="color:var(--text);">50%</strong> of turnover on player wages + manager costs. Clubs in their <strong style="color:var(--text);">first season</strong> after relegation from the Championship get a temporary <strong style="color:var(--text);">65%</strong> allowance. Owner equity injections count at 50% toward the allowance on top of the turnover-based limit. Set the threshold per season below — it defaults to 65% for the current season and 50% elsewhere.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="title-flex">Adjusted EBT by Season<span class="hint-small">amortisation pulled live from the squad tracker, truncated at any recorded sale date</span></span></h2>
+    <div style="overflow-x:auto;">
+      <table id="ebtTable">
+        <thead><tr><th>Season</th><th>Revenue</th><th>Wages</th><th>Amortisation</th><th>Other opex</th><th>Trading P/L</th><th>Add-backs</th><th>Adjusted EBT</th></tr></thead>
+        <tbody id="ebtBody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:18px;">
+      <label>Rolling three-year window</label>
+      <select id="rollingSelect" style="max-width:280px;"></select>
+    </div>
+    <div class="verdict-banner" id="verdictBanner">
+      <div>
+        <div class="verdict-label">Three-year P&amp;S calculation</div>
+        <div class="big" id="verdictValue">—</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="verdict-label">vs threshold</div>
+        <div class="big" id="verdictThreshold">£39.0m</div>
+      </div>
+    </div>
+    <div class="threshold-note">
+      Baseline threshold is £39m over three seasons (£13m/season). Clubs may be permitted up to £22m more per season the excess is covered by secure owner equity rather than debt — toggle if that applies:
+      <label style="display:inline-flex;align-items:center;gap:6px;margin-left:8px;color:var(--text);"><input type="checkbox" id="equityToggle" style="width:auto;"> Equity-funded (higher threshold)</label>
+    </div>
+    <span class="toast" id="saveToast">saved</span>
+  </div>
+
+  <div class="notes">
+    <h3>Basis &amp; limitations</h3>
+    <ul>
+      <li>Adjusted EBT here = Revenue − Wages − Amortisation − Other opex + Player trading profit/loss + Add-backs. Real statutory accounts also net off interest, player loan income, and other smaller lines not modelled here — treat this as directional, not audit-ready.</li>
+      <li>Amortisation per season is computed live from the squad tracker's contract data, and is truncated at a player's recorded sale date so no further charge accrues after disposal — new signings added to the squad tracker will automatically flow through here.</li>
+      <li>Seasons run 1 July–30 June, matching the contract expiry convention in your data. If Leicester's actual financial year end differs, the season attribution of amortisation and disposals will need adjusting.</li>
+      <li>Squad purchases (rather than disposals) don't need a separate entry here — add the player to the Squad Book Value tracker and their amortisation will be picked up automatically in the season they're signed.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const fmtGBP = (v) => '£' + Math.round(v).toLocaleString('en-GB');
+const fmtGBPm = (v) => (v/1000000 >= 0 ? '£' : '−£') + Math.abs(v/1000000).toFixed(1) + 'm';
+function parseDate(s){ return new Date(s + 'T00:00:00'); }
+function yearsBetween(d1, d2){ return (d2 - d1) / (1000*60*60*24*365.25); }
+function addYears(date, years){ const d = new Date(date.getTime()); d.setTime(d.getTime() + years*365.25*24*60*60*1000); return d; }
+function fmtDate(d){ return d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}); }
+function fmtDateInput(d){ return d.toISOString().slice(0,10); }
+
+function computeSchedule(cost, signDate, initialLength, renewals, valuationDate){
+  let segments = [{ start: signDate, life: initialLength, opening: cost }];
+  const sorted = [...renewals].sort((a,b)=>a.date-b.date);
+  for(const r of sorted){
+    const seg = segments[segments.length-1];
+    let elapsed = yearsBetween(seg.start, r.date);
+    elapsed = Math.max(0, Math.min(elapsed, seg.life));
+    const charge = seg.life > 0 ? seg.opening/seg.life : 0;
+    const bvAtRenewal = Math.max(0, seg.opening - charge*elapsed);
+    segments.push({ start: r.date, life: r.newLength, opening: bvAtRenewal + (r.extraCost||0) });
+  }
+  const cur = segments[segments.length-1];
+  let elapsedCur = yearsBetween(cur.start, valuationDate);
+  elapsedCur = Math.max(0, Math.min(elapsedCur, cur.life));
+  const curCharge = cur.life > 0 ? cur.opening/cur.life : 0;
+  const bookValue = Math.max(0, cur.opening - curCharge*elapsedCur);
+  return { segments, bookValue, currentAnnualCharge: curCharge };
+}
+
+function playerSchedule(p, valuationDate){
+  const renewals = (p.renewals||[]).map(r => ({ date: parseDate(r.date), newLength: r.newLength, extraCost: r.extraCost||0 }));
+  return computeSchedule(p.fee, parseDate(p.signDate), p.initialLength, renewals, valuationDate);
+}
+
+function segmentOverlapYears(segStart, segLife, winStart, winEnd){
+  const segEnd = addYears(segStart, segLife);
+  const overlapStart = segStart > winStart ? segStart : winStart;
+  const overlapEnd = segEnd < winEnd ? segEnd : winEnd;
+  if(overlapEnd <= overlapStart) return 0;
+  return yearsBetween(overlapStart, overlapEnd);
+}
+
+function playerSeasonCharge(schedule, winStart, winEnd, saleDate){
+  let effectiveEnd = winEnd;
+  if(saleDate){
+    if(saleDate <= winStart) return 0;
+    if(saleDate < effectiveEnd) effectiveEnd = saleDate;
+  }
+  let total = 0;
+  schedule.segments.forEach(seg => {
+    const rate = seg.life > 0 ? seg.opening/seg.life : 0;
+    total += rate * segmentOverlapYears(seg.start, seg.life, winStart, effectiveEnd);
+  });
+  return total;
+}
+
+// season label "2024/25" -> {start, end}
+function seasonBounds(label){
+  const startYear = parseInt(label.slice(0,4));
+  return { start: parseDate(startYear + '-07-01'), end: parseDate((startYear+1) + '-07-01') };
+}
+function seasonLabelForDate(d){
+  const cutoff = new Date(d.getFullYear() + '-07-01' + 'T00:00:00');
+  const startYear = d >= cutoff ? d.getFullYear() : d.getFullYear() - 1;
+  return startYear + '/' + String(startYear+1).slice(2);
+}
+
+let squadData = {};
+let psrData = { transactions: [], seasonInputs: {}, equityFunded: false };
+const today = new Date();
+
+async function loadAll(){
+  try {
+    const res = await fetch('/api/squad');
+    if(res.ok) squadData = await res.json();
+  } catch(e){}
+  try {
+    const res = await fetch('/api/psr');
+    if(res.ok){
+      const json = await res.json();
+      if(json && Object.keys(json).length) psrData = Object.assign({transactions:[], seasonInputs:{}, equityFunded:false}, json);
+    }
+  } catch(e){}
+  document.getElementById('equityToggle').checked = !!psrData.equityFunded;
+  populatePlayerSelect();
+  render();
+}
+
+async function persist(){
+  try {
+    await fetch('/api/psr', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(psrData) });
+    const t = document.getElementById('saveToast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 1400);
+  } catch(e){ console.error(e); }
+}
+
+function populatePlayerSelect(){
+  const sel = document.getElementById('txPlayer');
+  const soldNames = new Set(psrData.transactions.map(t=>t.player));
+  const names = Object.keys(squadData).filter(n => !soldNames.has(n)).sort();
+  sel.innerHTML = '<option value="">— select player —</option>' +
+    names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('') +
+    '<option value="__other__">Other / not in squad tracker…</option>';
+}
+
+document.getElementById('txPlayer').addEventListener('change', updateBookValuePreview);
+document.getElementById('txDate').addEventListener('change', updateBookValuePreview);
+
+function updateBookValuePreview(){
+  const name = document.getElementById('txPlayer').value;
+  const dateStr = document.getElementById('txDate').value;
+  const bvInput = document.getElementById('txBookValue');
+  if(!name || name === '__other__' || !squadData[name] || !dateStr){
+    return;
+  }
+  const s = playerSchedule(squadData[name], parseDate(dateStr));
+  bvInput.value = Math.round(s.bookValue);
+}
+
+document.getElementById('addTxBtn').addEventListener('click', async () => {
+  let name = document.getElementById('txPlayer').value;
+  const dateStr = document.getElementById('txDate').value;
+  const fee = parseFloat(document.getElementById('txFee').value);
+  const bookValue = parseFloat(document.getElementById('txBookValue').value);
+
+  if(name === '__other__') name = prompt('Player name:');
+  if(!name || !dateStr || isNaN(fee) || isNaN(bookValue)){
+    alert('Fill in player, sale date, sale fee, and book value before adding.');
+    return;
+  }
+  psrData.transactions.push({ player: name, date: dateStr, fee, bookValue });
+  document.getElementById('txFee').value = '';
+  document.getElementById('txBookValue').value = '';
+  document.getElementById('txPlayer').value = '';
+  await persist();
+  populatePlayerSelect();
+  render();
+});
+
+function ensureSeasonInputs(labels){
+  const currentLabel = seasonLabelForDate(today);
+  labels.forEach(l => {
+    if(!psrData.seasonInputs[l]){
+      psrData.seasonInputs[l] = {
+        revenue:0, wages:0, otherOpex:0, addBacks:0,
+        managerCosts:0, equityInjected:0,
+        scmpThresholdPct: (l === currentLabel ? 65 : 50)
+      };
+    }
+    // backfill fields for seasons created before this update
+    const s = psrData.seasonInputs[l];
+    if(s.managerCosts === undefined) s.managerCosts = 0;
+    if(s.equityInjected === undefined) s.equityInjected = 0;
+    if(s.scmpThresholdPct === undefined) s.scmpThresholdPct = (l === currentLabel ? 65 : 50);
+  });
+}
+
+function liveWageBill(label){
+  const { start, end } = seasonBounds(label);
+  let total = 0;
+  Object.entries(squadData).forEach(([name, p]) => {
+    const wage = p.wage || 0;
+    if(!wage) return;
+    const sale = psrData.transactions.find(t => t.player === name);
+    const saleDate = sale ? parseDate(sale.date) : null;
+    const schedule = playerSchedule(p, end);
+    const lastSeg = schedule.segments[schedule.segments.length - 1];
+    const empEnd = addYears(lastSeg.start, lastSeg.life);
+    const empStart = parseDate(p.signDate);
+    let effectiveEnd = (saleDate && saleDate < empEnd) ? saleDate : empEnd;
+    const overlapStart = empStart > start ? empStart : start;
+    const overlapEnd = effectiveEnd < end ? effectiveEnd : end;
+    if(overlapEnd <= overlapStart) return;
+    total += wage * yearsBetween(overlapStart, overlapEnd);
+  });
+  return total;
+}
+
+function getSeasonLabels(){
+  const labels = new Set();
+  Object.values(squadData).forEach(p => {
+    labels.add(seasonLabelForDate(parseDate(p.signDate)));
+  });
+  psrData.transactions.forEach(t => labels.add(seasonLabelForDate(parseDate(t.date))));
+  Object.keys(psrData.seasonInputs).forEach(l => labels.add(l));
+  labels.add(seasonLabelForDate(today));
+  // fill any gaps + extend one season into the future
+  const nums = [...labels].map(l => parseInt(l.slice(0,4)));
+  const min = Math.min(...nums), max = Math.max(...nums) + 1;
+  const full = [];
+  for(let y = min; y <= max; y++) full.push(y + '/' + String(y+1).slice(2));
+  return full;
+}
+
+function renderTxTable(){
+  const tbody = document.getElementById('txBody');
+  const empty = document.getElementById('txEmpty');
+  const sorted = [...psrData.transactions].sort((a,b) => parseDate(a.date) - parseDate(b.date));
+  empty.style.display = sorted.length ? 'none' : 'block';
+  tbody.innerHTML = sorted.map((t, idx) => {
+    const realIdx = psrData.transactions.indexOf(t);
+    const result = t.fee - t.bookValue;
+    return `<tr>
+      <td style="text-align:left;">${t.player}</td>
+      <td>${fmtDate(parseDate(t.date))}</td>
+      <td>${seasonLabelForDate(parseDate(t.date))}</td>
+      <td>${fmtGBP(t.fee)}</td>
+      <td>${fmtGBP(t.bookValue)}</td>
+      <td class="${result>=0?'profit':'loss'}">${result>=0?'+':''}${fmtGBP(result)}</td>
+      <td><button class="remove-btn" data-idx="${realIdx}">remove ×</button></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-idx]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      psrData.transactions.splice(parseInt(btn.dataset.idx), 1);
+      await persist();
+      populatePlayerSelect();
+      render();
+    });
+  });
+}
+
+function renderSeasonInputs(labels){
+  const tbody = document.getElementById('seasonInputBody');
+  tbody.innerHTML = labels.map(l => {
+    const s = psrData.seasonInputs[l];
+    const live = liveWageBill(l);
+    return `<tr>
+      <td style="text-align:left;">${l}</td>
+      <td><input type="number" class="si" data-season="${l}" data-field="revenue" value="${s.revenue}" step="100000"></td>
+      <td>
+        <input type="number" class="si" data-season="${l}" data-field="wages" value="${s.wages}" step="100000">
+        <div style="font-size:10px;color:var(--muted-2);margin-top:3px;text-align:right;">calc: ${fmtGBP(live)} <button class="remove-btn" data-sync="${l}" style="color:var(--gold);">use</button></div>
+      </td>
+      <td><input type="number" class="si" data-season="${l}" data-field="otherOpex" value="${s.otherOpex}" step="100000"></td>
+      <td><input type="number" class="si" data-season="${l}" data-field="addBacks" value="${s.addBacks}" step="100000"></td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('.si').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const l = inp.dataset.season, f = inp.dataset.field;
+      psrData.seasonInputs[l][f] = parseFloat(inp.value) || 0;
+      await persist();
+      renderEbt(labels);
+      renderRollingSelector(labels);
+      renderScmp(labels);
+    });
+  });
+  tbody.querySelectorAll('[data-sync]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const l = btn.dataset.sync;
+      psrData.seasonInputs[l].wages = Math.round(liveWageBill(l));
+      await persist();
+      renderSeasonInputs(labels);
+      renderEbt(labels);
+      renderRollingSelector(labels);
+      renderScmp(labels);
+    });
+  });
+}
+
+function renderScmp(labels){
+  const tbody = document.getElementById('scmpBody');
+  tbody.innerHTML = labels.map(l => {
+    const s = psrData.seasonInputs[l];
+    const allowed = (s.scmpThresholdPct/100) * s.revenue + 0.5 * s.equityInjected;
+    const actual = s.wages + s.managerCosts;
+    const headroom = allowed - actual;
+    const pass = headroom >= 0;
+    return `<tr>
+      <td style="text-align:left;">${l}</td>
+      <td>${fmtGBP(s.revenue)}</td>
+      <td>${fmtGBP(s.wages)}</td>
+      <td><input type="number" class="scmp-in" data-season="${l}" data-field="managerCosts" value="${s.managerCosts}" step="10000"></td>
+      <td><input type="number" class="scmp-in" data-season="${l}" data-field="equityInjected" value="${s.equityInjected}" step="50000"></td>
+      <td>
+        <select class="scmp-in" data-season="${l}" data-field="scmpThresholdPct">
+          <option value="50" ${s.scmpThresholdPct==50?'selected':''}>50% (standard)</option>
+          <option value="65" ${s.scmpThresholdPct==65?'selected':''}>65% (1st season down)</option>
+        </select>
+      </td>
+      <td>${fmtGBP(allowed)}</td>
+      <td>${fmtGBP(actual)}</td>
+      <td class="${pass?'profit':'loss'}" style="font-weight:600;">${headroom>=0?'+':''}${fmtGBP(headroom)}</td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('.scmp-in').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const l = inp.dataset.season, f = inp.dataset.field;
+      const val = f === 'scmpThresholdPct' ? parseInt(inp.value) : (parseFloat(inp.value) || 0);
+      psrData.seasonInputs[l][f] = val;
+      await persist();
+      renderScmp(labels);
+    });
+  });
+}
+
+function seasonAmortisation(label){
+  const { start, end } = seasonBounds(label);
+  let total = 0;
+  Object.entries(squadData).forEach(([name, p]) => {
+    const sale = psrData.transactions.find(t => t.player === name);
+    const saleDate = sale ? parseDate(sale.date) : null;
+    const s = playerSchedule(p, saleDate || end);
+    total += playerSeasonCharge(s, start, end, saleDate);
+  });
+  return total;
+}
+
+function seasonTradingPL(label){
+  const { start, end } = seasonBounds(label);
+  return psrData.transactions
+    .filter(t => { const d = parseDate(t.date); return d >= start && d < end; })
+    .reduce((sum,t) => sum + (t.fee - t.bookValue), 0);
+}
+
+function adjustedEbt(label){
+  const s = psrData.seasonInputs[label] || { revenue:0, wages:0, otherOpex:0, addBacks:0 };
+  const amort = seasonAmortisation(label);
+  const trading = seasonTradingPL(label);
+  const ebt = s.revenue - s.wages - amort - s.otherOpex + trading + s.addBacks;
+  return { ...s, amort, trading, ebt };
+}
+
+function renderEbt(labels){
+  const tbody = document.getElementById('ebtBody');
+  tbody.innerHTML = labels.map(l => {
+    const e = adjustedEbt(l);
+    return `<tr>
+      <td style="text-align:left;">${l}</td>
+      <td>${fmtGBP(e.revenue)}</td>
+      <td>${fmtGBP(e.wages)}</td>
+      <td>${fmtGBP(e.amort)}</td>
+      <td>${fmtGBP(e.otherOpex)}</td>
+      <td class="${e.trading>=0?'profit':'loss'}">${e.trading>=0?'+':''}${fmtGBP(e.trading)}</td>
+      <td>${fmtGBP(e.addBacks)}</td>
+      <td style="font-weight:600;color:${e.ebt>=0?'var(--teal)':'var(--clay)'};">${fmtGBP(e.ebt)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRollingSelector(labels){
+  const sel = document.getElementById('rollingSelect');
+  const windows = [];
+  for(let i=0; i<=labels.length-3; i++){
+    windows.push([labels[i], labels[i+1], labels[i+2]]);
+  }
+  const prevValue = sel.value;
+  sel.innerHTML = windows.map(w => `<option value="${w.join(',')}">${w[0]} – ${w[2]}</option>`).join('');
+  if(windows.some(w => w.join(',') === prevValue)){
+    sel.value = prevValue;
+  } else if(windows.length){
+    sel.value = windows[windows.length-1].join(',');
+  }
+  updateVerdict();
+}
+
+function updateVerdict(){
+  const sel = document.getElementById('rollingSelect');
+  if(!sel.value) return;
+  const labels = sel.value.split(',');
+  const total = labels.reduce((sum,l) => sum + adjustedEbt(l).ebt, 0);
+  const equityFunded = document.getElementById('equityToggle').checked;
+  const threshold = equityFunded ? 39000000 + 22000000 : 39000000;
+
+  document.getElementById('verdictValue').textContent = fmtGBPm(total);
+  document.getElementById('verdictThreshold').textContent = fmtGBPm(-threshold) + ' limit';
+
+  const banner = document.getElementById('verdictBanner');
+  const breach = total < -threshold;
+  banner.className = 'verdict-banner ' + (breach ? 'fail' : 'pass');
+  document.getElementById('verdictValue').parentElement.querySelector('.verdict-label').textContent =
+    breach ? 'Three-year P&S calculation — BREACH' : 'Three-year P&S calculation — within limit';
+}
+
+document.getElementById('rollingSelect').addEventListener('change', updateVerdict);
+document.getElementById('equityToggle').addEventListener('change', async () => {
+  psrData.equityFunded = document.getElementById('equityToggle').checked;
+  await persist();
+  updateVerdict();
+});
+
+function render(){
+  const labels = getSeasonLabels();
+  ensureSeasonInputs(labels);
+  renderTxTable();
+  renderSeasonInputs(labels);
+  renderScmp(labels);
+  renderEbt(labels);
+  renderRollingSelector(labels);
+}
+
+document.getElementById('txDate').value = fmtDateInput(today);
+loadAll();
+</script>
+</body>
+</html>

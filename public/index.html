@@ -108,7 +108,7 @@
       <h1>Squad Book Value &amp; PSR Tracker</h1>
       <div class="subhead">Current amortised book value for every contracted player, drawn from Leicester City contract records, with re-amortisation applied on each renewal.</div>
     </div>
-    <div class="today-badge">Valuation date<strong id="todayDisplay">—</strong></div>
+    <div class="today-badge">Valuation date<strong id="todayDisplay">—</strong><a href="/psr.html" style="color:var(--gold);text-decoration:none;font-size:11px;">→ PSR Ledger</a></div>
   </header>
 
   <div class="totals-row" id="totalsRow"></div>
@@ -128,6 +128,7 @@
             <th data-sort="cost">Cost <span class="arrow" data-arrow="cost"></span></th>
             <th data-sort="signed">Signed <span class="arrow" data-arrow="signed"></span></th>
             <th data-sort="renewals">Renewals <span class="arrow" data-arrow="renewals"></span></th>
+            <th data-sort="wage">Est. annual wage <span class="arrow" data-arrow="wage"></span></th>
             <th data-sort="charge">Annual charge <span class="arrow" data-arrow="charge"></span></th>
             <th data-sort="remaining">Remaining <span class="arrow" data-arrow="remaining"></span></th>
             <th data-sort="bookvalue">Book value <span class="arrow" data-arrow="bookvalue"></span></th>
@@ -239,22 +240,23 @@ document.getElementById('addPlayerBtn').addEventListener('click', async () => {
   let base = 'New Player';
   let name = base, i = 1;
   while(squadData[name]) { name = base + ' ' + (++i); }
-  squadData[name] = { fee: 0, signDate: fmtDateInput(today), initialLength: 4, renewals: [] };
+  squadData[name] = { fee: 0, signDate: fmtDateInput(today), initialLength: 4, wage: 0, renewals: [] };
   selectedPlayer = name;
   await persist();
   render();
 });
 
 function computeTotals(){
-  let totalCost = 0, totalBV = 0, count = 0, fullyAmortised = 0;
+  let totalCost = 0, totalBV = 0, totalWage = 0, count = 0, fullyAmortised = 0;
   Object.values(squadData).forEach(p => {
     const s = playerSchedule(p);
     totalCost += p.fee;
     totalBV += s.bookValue;
+    totalWage += p.wage || 0;
     count++;
     if(s.bookValue <= 0.5) fullyAmortised++;
   });
-  return { totalCost, totalBV, count, fullyAmortised };
+  return { totalCost, totalBV, totalWage, count, fullyAmortised };
 }
 
 function renderTotals(){
@@ -263,7 +265,7 @@ function renderTotals(){
     <div class="total-card"><div class="k">Players tracked</div><div class="v" style="color:var(--text);">${t.count}</div></div>
     <div class="total-card"><div class="k">Total capitalised cost</div><div class="v">${fmtGBP(t.totalCost)}</div></div>
     <div class="total-card"><div class="k">Total current book value</div><div class="v">${fmtGBP(t.totalBV)}</div></div>
-    <div class="total-card"><div class="k">Fully amortised</div><div class="v" style="color:var(--teal);">${t.fullyAmortised}</div></div>
+    <div class="total-card"><div class="k">Est. annual wage bill</div><div class="v" style="color:var(--teal);">${fmtGBP(t.totalWage)}</div></div>
   `;
 }
 
@@ -279,6 +281,7 @@ function sortedEntries(){
       case 'cost': av=a.p.fee; bv=b.p.fee; break;
       case 'signed': av=a.p.signDate; bv=b.p.signDate; break;
       case 'renewals': av=(a.p.renewals||[]).length; bv=(b.p.renewals||[]).length; break;
+      case 'wage': av=a.p.wage||0; bv=b.p.wage||0; break;
       case 'charge': av=a.s.currentAnnualCharge; bv=b.s.currentAnnualCharge; break;
       case 'remaining': av=a.s.remainingYears; bv=b.s.remainingYears; break;
       case 'bookvalue': default: av=a.s.bookValue; bv=b.s.bookValue; break;
@@ -300,6 +303,7 @@ function renderTable(){
         <td>${fmtGBP(p.fee)}</td>
         <td>${fmtDate(parseDate(p.signDate))}</td>
         <td>${(p.renewals||[]).length ? `<span class="renewal-count">${p.renewals.length}×</span>` : '—'}</td>
+        <td>${fmtGBP(p.wage||0)}</td>
         <td>${fmtGBP(s.currentAnnualCharge)}</td>
         <td>${remLabel}</td>
         <td style="color:var(--gold);font-weight:600;">${fmtGBP(s.bookValue)}</td>
@@ -426,6 +430,7 @@ function renderDetail(){
         <div class="stat"><div class="k">Total cost</div><div class="v">${fmtGBP(p.fee + (p.renewals||[]).reduce((sum,r)=>sum+(r.extraCost||0),0))}</div></div>
         <div class="stat"><div class="k">Annual charge</div><div class="v">${fmtGBP(s.currentAnnualCharge)}</div></div>
         <div class="stat"><div class="k">Remaining</div><div class="v">${s.bookValue<=0.5?'Fully amortised':Math.floor(s.remainingYears)+'y '+Math.round((s.remainingYears-Math.floor(s.remainingYears))*12)+'m'}</div></div>
+        <div class="stat"><div class="k">Est. annual wage</div><div class="v">${fmtGBP(p.wage||0)}</div></div>
       </div>
     </div>
 
@@ -438,7 +443,10 @@ function renderDetail(){
           <div class="field"><label>Transfer fee (£)</label><input type="number" id="editFee" value="${p.fee}" min="0" step="50000"></div>
           <div class="field"><label>Initial length (yrs)</label><input type="number" id="editLength" value="${p.initialLength}" min="0.1" step="0.5"></div>
         </div>
-        <div class="field"><label>Date signed</label><input type="date" id="editSignDate" value="${p.signDate}"></div>
+        <div class="field-row">
+          <div class="field"><label>Date signed</label><input type="date" id="editSignDate" value="${p.signDate}"></div>
+          <div class="field"><label>Est. annual wage (£)</label><input type="number" id="editWage" value="${p.wage||0}" min="0" step="10000"></div>
+        </div>
 
         <div style="border-top:1px dashed var(--border);margin-top:12px;padding-top:12px;">
           <div class="renewal-label" style="margin-bottom:8px;">Renewals</div>
@@ -477,6 +485,7 @@ function renderDetail(){
     const fee = parseFloat(document.getElementById('editFee').value) || 0;
     const length = parseFloat(document.getElementById('editLength').value) || 0.5;
     const signDate = document.getElementById('editSignDate').value;
+    const wage = parseFloat(document.getElementById('editWage').value) || 0;
     const renewals = [];
     content.querySelectorAll('.renewal-row').forEach(row => {
       const date = row.querySelector('.rn-date').value;
@@ -488,12 +497,12 @@ function renderDetail(){
       delete squadData[selectedPlayer];
       selectedPlayer = newName;
     }
-    squadData[selectedPlayer] = { fee, signDate, initialLength: length, renewals };
+    squadData[selectedPlayer] = { fee, signDate, initialLength: length, wage, renewals };
     await persist();
     render();
   };
 
-  content.querySelectorAll('#editName,#editFee,#editLength,#editSignDate,.rn-date,.rn-length,.rn-extra').forEach(el => {
+  content.querySelectorAll('#editName,#editFee,#editLength,#editSignDate,#editWage,.rn-date,.rn-length,.rn-extra').forEach(el => {
     el.addEventListener('change', commit);
   });
   content.querySelectorAll('[data-remove-renewal]').forEach(btn => {
