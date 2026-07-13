@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LCFC Squad Depth Chart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1720; --panel:#161F2A; --panel-2:#1B2530; --border:#28333F;
+    --text:#E8EDF2; --muted:#8B98A5; --muted-2:#5E6B78;
+    --gold:#C99A4B; --gold-dim:#8A7043; --teal:#4FA88F; --clay:#C1584A; --blue:#5B8DBF;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;}
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 24px 64px;}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:600;margin:0;letter-spacing:-0.01em;}
+  .subhead{color:var(--muted);font-size:13px;max-width:600px;margin-top:6px;}
+  .nav-links{display:flex;gap:14px;align-items:center;}
+  .nav-link{color:var(--gold);text-decoration:none;font-size:11px;font-family:'IBM Plex Mono',monospace;}
+
+  .top-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+  button.mini{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 12px;border-radius:var(--radius);font-family:'IBM Plex Mono',monospace;font-size:11.5px;cursor:pointer;}
+  button.mini:hover{border-color:var(--gold);color:var(--gold);}
+  .toast{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal);opacity:0;transition:opacity .3s;}
+  .toast.show{opacity:1;}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:22px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .legend span.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
+
+  .position-row{margin-bottom:22px;}
+  .position-label{
+    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;
+    letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:10px;
+  }
+  .position-label::before{content:"";width:3px;height:14px;background:var(--gold);display:inline-block;}
+  .position-label input.label-edit{
+    background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--muted);
+    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;
+    padding:2px 0;width:220px;
+  }
+  .position-label input.label-edit:focus{outline:none;border-color:var(--gold);color:var(--text);}
+  .row-actions{margin-left:auto;display:flex;gap:8px;}
+  .row-actions button{background:none;border:none;color:var(--muted-2);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;text-transform:none;letter-spacing:0;}
+  .row-actions button:hover{color:var(--gold);}
+  .row-actions button.danger:hover{color:var(--clay);}
+
+  .slot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 16px;position:relative;cursor:pointer;
+  }
+  .card:hover{border-color:var(--gold-dim);}
+  .card.editing{cursor:default;border-color:var(--gold);}
+  .card.vacant{
+    background:transparent;border:1px dashed var(--border);color:var(--muted-2);
+    display:flex;align-items:center;justify-content:center;text-align:center;min-height:88px;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;
+  }
+  .choice-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--gold);text-transform:uppercase;
+    letter-spacing:0.06em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .card-name{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:2px;}
+  .card-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:8px;}
+  .card-stats{display:flex;gap:12px;margin-bottom:8px;}
+  .card-stats .stat{font-family:'IBM Plex Mono',monospace;font-size:11px;}
+  .card-stats .stat .n{color:var(--text);font-weight:600;}
+  .card-stats .stat .l{color:var(--muted-2);font-size:9.5px;text-transform:uppercase;margin-left:3px;}
+  .status-tag{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:2px 7px;
+    border-radius:2px;text-transform:uppercase;letter-spacing:0.04em;margin-right:6px;
+  }
+  .status-CT{background:rgba(79,168,143,0.12);color:var(--teal);}
+  .status-AT{background:rgba(193,88,74,0.12);color:var(--clay);}
+  .status-U21{background:rgba(91,141,191,0.14);color:var(--blue);}
+  .status-IN{background:rgba(201,154,75,0.14);color:var(--gold);}
+  .status-TBC{background:rgba(139,152,165,0.1);color:var(--muted);}
+  .card-note{font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);}
+  .card-wage{position:absolute;top:14px;right:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold-dim);}
+
+  .out-section{margin-top:36px;padding-top:22px;border-top:1px solid var(--border);}
+  .out-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+  .out-card{
+    background:var(--panel);border:1px solid rgba(193,88,74,0.25);border-radius:var(--radius);
+    padding:14px 16px;cursor:pointer;
+  }
+  .out-card:hover{border-color:var(--clay);}
+  .out-card.editing{cursor:default;}
+  .out-card .card-name{color:var(--text);}
+  .out-card .pos-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--clay);text-transform:uppercase;letter-spacing:0.05em;}
+  .add-out-card{
+    border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted-2);
+    display:flex;align-items:center;justify-content:center;min-height:80px;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;
+  }
+  .add-out-card:hover{border-color:var(--gold);color:var(--gold);}
+
+  /* edit form */
+  .edit-form label{display:block;font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:0.05em;margin:8px 0 3px;}
+  .edit-form label:first-child{margin-top:0;}
+  .edit-form input, .edit-form select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 8px;border-radius:var(--radius);
+  }
+  .edit-form input:focus, .edit-form select:focus{outline:1px solid var(--gold);border-color:var(--gold);}
+  .edit-form .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .edit-form-actions{display:flex;gap:8px;margin-top:12px;}
+  .edit-form-actions button{flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px;border-radius:var(--radius);cursor:pointer;}
+  .btn-done{background:var(--gold);border:1px solid var(--gold);color:#0F1720;font-weight:600;}
+  .btn-vacate{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn-vacate:hover{border-color:var(--clay);color:var(--clay);}
+
+  .add-slot-card{
+    border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted-2);
+    display:flex;align-items:center;justify-content:center;min-height:88px;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;
+  }
+  .add-slot-card:hover{border-color:var(--gold);color:var(--gold);}
+
+  .notes{margin-top:28px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:14px;}
+  .notes h3{font-family:'Space Grotesk',sans-serif;font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text);margin:0 0 8px;}
+  .notes ul{margin:0;padding-left:16px;}
+  .notes li{margin-bottom:5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">Squad Cost &amp; PSR Tooling — Leicester City</div>
+      <h1>Squad Depth Chart</h1>
+      <div class="subhead">First-team positional depth, contract status, CA, and wages — click any card to edit.</div>
+    </div>
+    <div class="nav-links">
+      <a href="/index.html" class="nav-link">← Squad Book Value</a>
+      <a href="/psr.html" class="nav-link">PSR Ledger →</a>
+    </div>
+  </header>
+
+  <div class="top-actions">
+    <button class="mini" id="resetBtn">Reset to uploaded data</button>
+    <button class="mini" id="addPositionBtn">+ Add position row</button>
+    <span class="toast" id="saveToast">saved</span>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--teal);"></span>CT — contracted, first-team</span>
+    <span><span class="dot" style="background:var(--clay);"></span>AT — available for transfer / listed</span>
+    <span><span class="dot" style="background:var(--blue);"></span>U21 — development squad, senior-listed</span>
+    <span><span class="dot" style="background:var(--gold);"></span>IN — expected incoming</span>
+    <span><span class="dot" style="background:var(--muted);"></span>TBC — vacant slot</span>
+  </div>
+
+  <div id="depthChart"></div>
+
+  <div class="out-section">
+    <div class="position-label">Out — Departed, Listed &amp; Loan-Bound</div>
+    <div class="out-grid" id="outGrid"></div>
+  </div>
+
+  <div class="notes">
+    <h3>Basis &amp; limitations</h3>
+    <ul>
+      <li>This page is fully editable and saves to your own storage — click any card, filled or vacant, to edit or clear it. Changes persist across sessions in the same way as the Squad Book Value and PSR Ledger tools.</li>
+      <li>CA (Current Ability) is FM's internal ability rating, useful for relative squad-strength comparison but not a real-world scouting metric.</li>
+      <li>Several players in the Out list are the same names tracked in the Squad Book Value tool. Worth checking whether any need a disposal entry in the PSR Ledger once fees are confirmed, since their book values keep amortising until recorded as sold.</li>
+      <li>Vacant slots reflect depth-chart placeholders for uncovered positions/roles, not an assertion that no player can play there.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const fmtGBP = (v) => v ? '£' + Number(v).toLocaleString('en-GB') : '—';
+const STATUS_LABELS = { CT:'CT', AT:'AT', U21:'U21', IN:'IN', TBC:'TBC' };
+const STATUS_OPTIONS = ['CT','AT','U21','IN','TBC'];
+
+const ORIGINAL_DATA = {
+  positions: [
+    { label:'Goalkeeper', slots: [
+      { choice:'1st', name:'Jakub Stolarczyk', squadNo:1, status:'CT', contractYear:2027, ca:117, age:25, nationality:'Poland', wage:20000 },
+      { choice:'2nd', name:'Asmir Begović', squadNo:31, status:'AT', contractYear:2026, ca:116, age:39, nationality:'Bosnia and Herzegovina', wage:10000, note:'Offered new contract' },
+      { choice:'3rd', vacant:true, label:'Third-choice GK' }
+    ]},
+    { label:'Right Back (DR)', slots: [
+      { choice:'1st', vacant:true, label:'Playmaker role' },
+      { choice:'2nd', name:'Jayden Joseph', squadNo:49, status:'AT', contractYear:2027, alt:'WBR/AMR', ca:85, age:20, nationality:'England', wage:900 }
+    ]},
+    { label:'Centre Back (Right-sided)', slots: [
+      { choice:'1st', vacant:true, label:'Right-sided CB' },
+      { choice:'2nd', vacant:true, label:'Right-sided CB' }
+    ]},
+    { label:'Centre Back (Left-sided)', slots: [
+      { choice:'1st', vacant:true, label:'Left-sided CB' },
+      { choice:'2nd', name:'Tom Wilson-Brown', squadNo:44, status:'CT', contractYear:2027, ca:88, age:21, nationality:'England', wage:2000 }
+    ]},
+    { label:'Left Back (DL)', slots: [
+      { choice:'1st', name:'Luke Thomas', squadNo:33, status:'CT', contractYear:2029, alt:'WBL', ca:120, age:25, nationality:'England', wage:35000 },
+      { choice:'2nd', name:'Bade Aluko', squadNo:56, status:'U21', contractYear:2028, alt:'DR/WBR/WBL/DC', ca:105, age:19, nationality:'England', wage:5000 }
+    ]},
+    { label:'Defensive Midfield (DM)', slots: [
+      { choice:'1st', name:'Hamza Choudhury', squadNo:17, captain:'C', status:'CT', contractYear:2027, alt:'DR/DL', ca:114, age:28, nationality:'Bangladesh', wage:55000 },
+      { choice:'2nd', vacant:true, label:'Defensive Midfielder' },
+      { choice:'3rd', vacant:true, label:'Defensive Midfielder' }
+    ]},
+    { label:'Central Midfield (Right)', slots: [
+      { choice:'1st', name:'Conor Chaplin', status:'IN', contractYear:2028, ca:115, age:29, nationality:'England', wage:15000, note:'Expected to join on free transfer' },
+      { choice:'2nd', name:'Will Alves', squadNo:37, status:'CT', contractYear:2028, alt:'AMC/AMR', ca:105, age:21, nationality:'England', wage:15000 }
+    ]},
+    { label:'Central Midfield (Left)', slots: [
+      { choice:'1st', name:'Louis Page', squadNo:25, status:'U21', contractYear:2028, ca:108, age:18, nationality:'England', wage:10000 },
+      { choice:'2nd', name:'Sammy Braybrooke', squadNo:36, status:'CT', contractYear:2027, alt:'DM', ca:112, age:22, nationality:'England', wage:5000 }
+    ]},
+    { label:'Right Wing (AMR)', slots: [
+      { choice:'1st', name:'Bobby De Cordova-Reid', squadNo:14, captain:'VC', status:'AT', contractYear:2027, alt:'AMC/AML', ca:116, age:33, nationality:'Jamaica', wage:45000 },
+      { choice:'2nd', name:'Silko Thomas', squadNo:39, status:'AT', contractYear:2026, alt:'SC/WBR', ca:105, age:22, nationality:'England', wage:1500, note:'Offered new contract' }
+    ]},
+    { label:'Left Wing (AML)', slots: [
+      { choice:'1st', vacant:true, label:'Left Winger' },
+      { choice:'2nd', vacant:true, label:'Left Winger' }
+    ]},
+    { label:'Striker (SC)', slots: [
+      { choice:'1st', name:'Danny Ings', status:'IN', contractYear:2027, ca:121, age:34, nationality:'England', wage:20000, note:'Expected to join on free transfer' },
+      { choice:'2nd', name:'Jake Evans', squadNo:65, status:'U21', contractYear:2028, alt:'AMR', ca:98, age:17, nationality:'England', wage:7500 },
+      { choice:'3rd', name:'Nathan Opoku', squadNo:42, status:'TBC', contractYear:2027, ca:81, age:25, nationality:'Ghana', wage:2500 }
+    ]}
+  ],
+  out: [
+    { name:'Fran Vieites', squadNo:13, pos:'GK', contractYear:2027, ca:110, age:27, nationality:'Spain' },
+    { name:'Woyo Coulibaly', squadNo:26, pos:'DR', alt:'WBR/DL', contractYear:2029, ca:126, age:27, nationality:'Mali' },
+    { name:'Ben Nelson', squadNo:4, pos:'DC(R)', status:'CT', contractYear:2027, ca:117, age:22, nationality:'England', note:'Linked with Torino and Borussia Mönchengladbach (reported £10m asking price)' },
+    { name:'Harry Souttar', squadNo:15, pos:'DC(R)', status:'AT', contractYear:2028, ca:119, age:27, nationality:'Australia', note:'Linked with Wrexham' },
+    { name:'Wout Faes', squadNo:3, pos:'DC(R)', contractYear:2027, ca:130, age:28, nationality:'Belgium', note:'Linked with Fenerbahçe' },
+    { name:'Jannik Vestergaard', squadNo:23, pos:'DC(L)', contractYear:2027, ca:121, age:34, nationality:'Denmark', note:'In discussions for cancellation of contract' },
+    { name:'Caleb Okoli', squadNo:5, pos:'DC(L)', contractYear:2029, ca:118, age:25, nationality:'Italy', note:'Linked with Torino and AC Monza' },
+    { name:'Victor Kristiansen', squadNo:16, pos:'DL', alt:'WBL', contractYear:2028, ca:113, age:23, nationality:'Denmark', note:'Expected to join Panathinaikos on loan' },
+    { name:'Harry Winks', squadNo:8, pos:'DM', alt:'MC', status:'AT', contractYear:2027, ca:120, age:30, nationality:'England', note:'Expected to join Cagliari Calcio' },
+    { name:'Oliver Skipp', squadNo:22, pos:'MC(R)', alt:'DM', status:'AT', contractYear:2029, ca:121, age:25, nationality:'England', note:'Linked with Middlesbrough' },
+    { name:'Abdul Fatawu', squadNo:7, pos:'AMR', contractYear:2029, ca:128, age:22, nationality:'Ghana', note:'Linked with West Ham United' },
+    { name:'Stephy Mavididi', squadNo:10, pos:'AML', status:'AT', contractYear:2028, ca:119, age:28, nationality:'England', note:'Linked with Real Sociedad, Sevilla and Valencia' }
+  ]
+};
+
+let depthData = {};
+let editingKey = null; // e.g. "pos-2-3" or "out-5"
+
+async function init(){
+  let stored = null;
+  try {
+    const res = await fetch('/api/depth');
+    if(res.ok){
+      const json = await res.json();
+      if(json && json.positions) stored = json;
+    }
+  } catch(e){}
+  depthData = stored || JSON.parse(JSON.stringify(ORIGINAL_DATA));
+  render();
+}
+
+async function persist(){
+  try {
+    await fetch('/api/depth', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(depthData) });
+    const t = document.getElementById('saveToast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 1400);
+  } catch(e){ console.error(e); }
+}
+
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  depthData = JSON.parse(JSON.stringify(ORIGINAL_DATA));
+  editingKey = null;
+  await persist();
+  render();
+});
+
+document.getElementById('addPositionBtn').addEventListener('click', async () => {
+  depthData.positions.push({ label:'New Position', slots:[ { choice:'1st', vacant:true, label:'Vacant' } ] });
+  await persist();
+  render();
+});
+
+function statusOptionsHtml(current){
+  return STATUS_OPTIONS.map(s => `<option value="${s}" ${current===s?'selected':''}>${s}</option>`).join('');
+}
+
+function slotEditForm(posIdx, slotIdx, slot){
+  const s = slot || {};
+  return `
+    <div class="edit-form">
+      <label>Player name (blank = vacant)</label>
+      <input type="text" data-f="name" value="${(s.name||'').replace(/"/g,'&quot;')}" placeholder="Vacant slot label if empty">
+      <div class="two-col">
+        <div><label>Squad #</label><input type="number" data-f="squadNo" value="${s.squadNo||''}"></div>
+        <div><label>Status</label><select data-f="status">${statusOptionsHtml(s.status||'TBC')}</select></div>
+      </div>
+      <div class="two-col">
+        <div><label>Contract until</label><input type="number" data-f="contractYear" value="${s.contractYear||''}" placeholder="2027"></div>
+        <div><label>CA</label><input type="number" data-f="ca" value="${s.ca||''}"></div>
+      </div>
+      <div class="two-col">
+        <div><label>Age</label><input type="number" data-f="age" value="${s.age||''}"></div>
+        <div><label>Wage (£/yr)</label><input type="number" data-f="wage" value="${s.wage||''}" step="500"></div>
+      </div>
+      <label>Nationality</label>
+      <input type="text" data-f="nationality" value="${(s.nationality||'').replace(/"/g,'&quot;')}">
+      <label>Alt. positions</label>
+      <input type="text" data-f="alt" value="${(s.alt||'').replace(/"/g,'&quot;')}" placeholder="e.g. WBR/AMR">
+      <label>Captaincy</label>
+      <select data-f="captain">
+        <option value="" ${!s.captain?'selected':''}>—</option>
+        <option value="C" ${s.captain==='C'?'selected':''}>Captain (C)</option>
+        <option value="VC" ${s.captain==='VC'?'selected':''}>Vice-Captain (VC)</option>
+      </select>
+      <label>Note</label>
+      <input type="text" data-f="note" value="${(s.note||'').replace(/"/g,'&quot;')}" placeholder="e.g. Offered new contract">
+      <div class="edit-form-actions">
+        <button class="btn-vacate" data-vacate="1">Clear to vacant</button>
+        <button class="btn-vacate" data-remove-slot="1">Remove slot</button>
+        <button class="btn-done" data-done="1">Done</button>
+      </div>
+    </div>
+  `;
+}
+
+function readSlotForm(container){
+  const get = f => container.querySelector(`[data-f="${f}"]`).value;
+  const name = get('name').trim();
+  if(!name){
+    return { choice: container.dataset.choice, vacant:true, label: get('alt') || 'Vacant' };
+  }
+  return {
+    choice: container.dataset.choice,
+    name,
+    squadNo: get('squadNo') ? parseInt(get('squadNo')) : undefined,
+    status: get('status'),
+    contractYear: get('contractYear') ? parseInt(get('contractYear')) : undefined,
+    ca: get('ca') ? parseInt(get('ca')) : undefined,
+    age: get('age') ? parseInt(get('age')) : undefined,
+    wage: get('wage') ? parseInt(get('wage')) : undefined,
+    nationality: get('nationality') || undefined,
+    alt: get('alt') || undefined,
+    captain: get('captain') || undefined,
+    note: get('note') || undefined
+  };
+}
+
+function slotCard(posIdx, slotIdx, slot){
+  const key = `pos-${posIdx}-${slotIdx}`;
+  const isEditing = editingKey === key;
+
+  if(isEditing){
+    return `<div class="card editing" data-key="${key}" data-choice="${slot.choice}">
+      <span class="choice-badge">${slot.choice} choice</span>
+      ${slotEditForm(posIdx, slotIdx, slot)}
+    </div>`;
+  }
+
+  if(slot.vacant){
+    return `<div class="card vacant" data-key="${key}">${slot.label || 'Vacant'}<br><span style="font-size:9px;">${slot.choice} choice — TBC</span></div>`;
+  }
+
+  const statusClass = 'status-' + (slot.status || 'TBC');
+  const altPos = slot.alt ? ` <span style="color:var(--muted-2);">(${slot.alt})</span>` : '';
+  return `
+    <div class="card" data-key="${key}">
+      <span class="choice-badge"><span>${slot.choice} choice${slot.squadNo ? ' · #'+slot.squadNo : ''}</span></span>
+      <div class="card-wage">${fmtGBP(slot.wage)}</div>
+      <div class="card-name">${slot.name}${slot.captain ? ' <span style="color:var(--gold);font-size:11px;">('+slot.captain+')</span>' : ''}</div>
+      <div class="card-meta">${slot.age ? slot.age+'y' : ''} ${slot.nationality || ''}${altPos}</div>
+      <div class="card-stats">
+        <div class="stat"><span class="n">${slot.ca || '—'}</span><span class="l">CA</span></div>
+        <div class="stat"><span class="n">${slot.contractYear || '—'}</span><span class="l">Until</span></div>
+      </div>
+      <span class="status-tag ${statusClass}">${STATUS_LABELS[slot.status] || slot.status || 'TBC'}</span>
+      ${slot.note ? `<div class="card-note">${slot.note}</div>` : ''}
+    </div>
+  `;
+}
+
+function outEditForm(idx, p){
+  const s = p || {};
+  return `
+    <div class="edit-form">
+      <label>Player name</label>
+      <input type="text" data-f="name" value="${(s.name||'').replace(/"/g,'&quot;')}">
+      <div class="two-col">
+        <div><label>Squad #</label><input type="number" data-f="squadNo" value="${s.squadNo||''}"></div>
+        <div><label>Position</label><input type="text" data-f="pos" value="${(s.pos||'').replace(/"/g,'&quot;')}" placeholder="e.g. DC(R)"></div>
+      </div>
+      <div class="two-col">
+        <div><label>Contract until</label><input type="number" data-f="contractYear" value="${s.contractYear||''}"></div>
+        <div><label>CA</label><input type="number" data-f="ca" value="${s.ca||''}"></div>
+      </div>
+      <div class="two-col">
+        <div><label>Age</label><input type="number" data-f="age" value="${s.age||''}"></div>
+        <div><label>Status</label><select data-f="status"><option value="">—</option>${statusOptionsHtml(s.status)}</select></div>
+      </div>
+      <label>Nationality</label>
+      <input type="text" data-f="nationality" value="${(s.nationality||'').replace(/"/g,'&quot;')}">
+      <label>Alt. positions</label>
+      <input type="text" data-f="alt" value="${(s.alt||'').replace(/"/g,'&quot;')}">
+      <label>Note (interest, asking price, destination)</label>
+      <input type="text" data-f="note" value="${(s.note||'').replace(/"/g,'&quot;')}">
+      <div class="edit-form-actions">
+        <button class="btn-vacate" data-remove-out="1">Remove from list</button>
+        <button class="btn-done" data-done="1">Done</button>
+      </div>
+    </div>
+  `;
+}
+
+function readOutForm(container){
+  const get = f => container.querySelector(`[data-f="${f}"]`).value;
+  return {
+    name: get('name') || 'Unnamed',
+    squadNo: get('squadNo') ? parseInt(get('squadNo')) : undefined,
+    pos: get('pos') || undefined,
+    contractYear: get('contractYear') ? parseInt(get('contractYear')) : undefined,
+    ca: get('ca') ? parseInt(get('ca')) : undefined,
+    age: get('age') ? parseInt(get('age')) : undefined,
+    status: get('status') || undefined,
+    nationality: get('nationality') || undefined,
+    alt: get('alt') || undefined,
+    note: get('note') || undefined
+  };
+}
+
+function outCard(idx, p){
+  const key = `out-${idx}`;
+  const isEditing = editingKey === key;
+  if(isEditing){
+    return `<div class="out-card editing" data-key="${key}">${outEditForm(idx, p)}</div>`;
+  }
+  return `
+    <div class="out-card" data-key="${key}">
+      <span class="pos-tag">${p.pos || '—'}${p.alt ? ' / '+p.alt : ''}${p.squadNo ? ' · #'+p.squadNo : ''}</span>
+      <div class="card-name">${p.name}</div>
+      <div class="card-meta">${p.age?p.age+'y':''} ${p.nationality||''} ${p.ca?'· CA '+p.ca:''} ${p.contractYear?'· until '+p.contractYear:''}</div>
+      ${p.note ? `<div class="card-note">${p.note}</div>` : ''}
+    </div>
+  `;
+}
+
+function render(){
+  const chartEl = document.getElementById('depthChart');
+  chartEl.innerHTML = depthData.positions.map((row, posIdx) => `
+    <div class="position-row">
+      <div class="position-label">
+        <input class="label-edit" data-pos-label="${posIdx}" value="${row.label.replace(/"/g,'&quot;')}">
+        <div class="row-actions">
+          <button data-add-slot="${posIdx}">+ add choice</button>
+          <button class="danger" data-remove-pos="${posIdx}">remove row</button>
+        </div>
+      </div>
+      <div class="slot-grid">
+        ${row.slots.map((slot, slotIdx) => slotCard(posIdx, slotIdx, slot)).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('outGrid').innerHTML =
+    depthData.out.map((p, idx) => outCard(idx, p)).join('') +
+    `<div class="add-out-card" id="addOutBtn">+ Add player to Out list</div>`;
+
+  wireEvents();
+}
+
+function wireEvents(){
+  // position label rename
+  document.querySelectorAll('[data-pos-label]').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      depthData.positions[parseInt(inp.dataset.posLabel)].label = inp.value;
+      await persist();
+    });
+  });
+
+  // add slot / remove position row
+  document.querySelectorAll('[data-add-slot]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const posIdx = parseInt(btn.dataset.addSlot);
+      const slots = depthData.positions[posIdx].slots;
+      const ordinal = ['1st','2nd','3rd','4th','5th','6th'][slots.length] || (slots.length+1)+'th';
+      slots.push({ choice: ordinal, vacant:true, label:'Vacant' });
+      await persist();
+      render();
+    });
+  });
+  document.querySelectorAll('[data-remove-pos]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('Remove this entire position row?')) return;
+      depthData.positions.splice(parseInt(btn.dataset.removePos), 1);
+      editingKey = null;
+      await persist();
+      render();
+    });
+  });
+
+  // card click -> edit mode
+  document.querySelectorAll('.card[data-key], .out-card[data-key]').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if(card.classList.contains('editing')) return;
+      editingKey = card.dataset.key;
+      render();
+    });
+  });
+
+  // slot form: done / vacate / remove
+  document.querySelectorAll('.card.editing').forEach(card => {
+    const [_, posIdx, slotIdx] = card.dataset.key.split('-');
+    const commit = async () => {
+      const updated = readSlotForm(card);
+      depthData.positions[posIdx].slots[slotIdx] = updated;
+      editingKey = null;
+      await persist();
+      render();
+    };
+    const doneBtn = card.querySelector('[data-done]');
+    if(doneBtn) doneBtn.addEventListener('click', (e) => { e.stopPropagation(); commit(); });
+    const vacateBtn = card.querySelector('[data-vacate]');
+    if(vacateBtn) vacateBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      depthData.positions[posIdx].slots[slotIdx] = { choice: card.dataset.choice, vacant:true, label:'Vacant' };
+      editingKey = null;
+      await persist();
+      render();
+    });
+    const removeSlotBtn = card.querySelector('[data-remove-slot]');
+    if(removeSlotBtn) removeSlotBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      depthData.positions[posIdx].slots.splice(slotIdx, 1);
+      editingKey = null;
+      await persist();
+      render();
+    });
+    card.addEventListener('click', e => e.stopPropagation());
+  });
+
+  // out form: done / remove
+  document.querySelectorAll('.out-card.editing').forEach(card => {
+    const idx = parseInt(card.dataset.key.split('-')[1]);
+    const commit = async () => {
+      depthData.out[idx] = readOutForm(card);
+      editingKey = null;
+      await persist();
+      render();
+    };
+    const doneBtn = card.querySelector('[data-done]');
+    if(doneBtn) doneBtn.addEventListener('click', (e) => { e.stopPropagation(); commit(); });
+    const removeBtn = card.querySelector('[data-remove-out]');
+    if(removeBtn) removeBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      depthData.out.splice(idx, 1);
+      editingKey = null;
+      await persist();
+      render();
+    });
+    card.addEventListener('click', e => e.stopPropagation());
+  });
+
+  const addOutBtn = document.getElementById('addOutBtn');
+  if(addOutBtn) addOutBtn.addEventListener('click', async () => {
+    depthData.out.push({ name:'New Player' });
+    editingKey = `out-${depthData.out.length - 1}`;
+    await persist();
+    render();
+  });
+}
+
+init();
+</script>
+</body>
+</html>

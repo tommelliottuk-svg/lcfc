@@ -108,7 +108,7 @@
       <h1>Squad Book Value &amp; PSR Tracker</h1>
       <div class="subhead">Current amortised book value for every contracted player, drawn from Leicester City contract records, with re-amortisation applied on each renewal.</div>
     </div>
-    <div class="today-badge">Valuation date<strong id="todayDisplay">—</strong><a href="/psr.html" style="color:var(--gold);text-decoration:none;font-size:11px;">→ PSR Ledger</a></div>
+    <div class="today-badge">Valuation date<strong id="todayDisplay">—</strong><a href="/psr.html" style="color:var(--gold);text-decoration:none;font-size:11px;">→ PSR Ledger</a> · <a href="/depth.html" style="color:var(--gold);text-decoration:none;font-size:11px;">→ Depth Chart</a></div>
   </header>
 
   <div class="totals-row" id="totalsRow"></div>
@@ -151,7 +151,7 @@
       <li>These are FM database fees, not audited club accounts — treat as a working proxy for real book value, not the club's actual capitalised cost, particularly for deals with add-ons or agent fees the database doesn't separate out.</li>
       <li>Players showing £0 cost are free transfers or academy graduates — any sale of these players is recognised as pure profit against PSR, which is correct treatment, not a data gap.</li>
       <li>Renewal contract periods are re-amortised over the new remaining term from the point of signing, per standard EFL/Premier League club accounting treatment. No additional capitalised cost is assumed on renewal unless you add one manually.</li>
-      <li>Edits you make here are saved in your browser only (not shared, not sent anywhere) and will persist next time you open this file in the same browser. Use "Reset to uploaded data" to discard edits and reload the original export.</li>
+      <li>Edits you make here are saved to Cloudflare KV via your Worker's API — not the browser — so they're accessible from any device on the same URL, not just where you made the change. There's no login on this yet, so anyone with the URL can read and edit it; see the earlier note on adding Cloudflare Access if that matters. Use "Reset to uploaded data" to discard edits and reload the original export.</li>
     </ul>
   </div>
 </div>
