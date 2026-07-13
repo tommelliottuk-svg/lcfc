@@ -121,7 +121,7 @@
     <h2><span class="title-flex">Season Inputs<span class="hint-small">wage bill and other P&amp;S lines — leave at 0 until you have real figures</span></span></h2>
     <div style="overflow-x:auto;">
       <table class="season-input-table">
-        <thead><tr><th>Season</th><th>Revenue (£)</th><th>Wage bill (£)</th><th>Other opex (£)</th><th>Add-backs (£)</th></tr></thead>
+        <thead><tr><th>Season</th><th>Level</th><th>Revenue (£)</th><th>Wage bill (£)</th><th>Other opex (£)</th><th>Add-backs (£)</th></tr></thead>
         <tbody id="seasonInputBody"></tbody>
       </table>
     </div>
@@ -129,7 +129,7 @@
   </div>
 
   <div class="panel">
-    <h2><span class="title-flex">Squad Cost Ratio (SCMP)<span class="hint-small">EFL League One wage cap — player wages (+ manager costs) as a share of turnover</span></span></h2>
+    <h2><span class="title-flex">Squad Cost Ratio (SCMP)<span class="hint-small">League One / League Two only — player wages (+ manager costs) as a share of turnover</span></span></h2>
     <div style="overflow-x:auto;">
       <table id="scmpTable">
         <thead><tr><th>Season</th><th>Turnover</th><th>Player wages</th><th>Manager/backroom</th><th>Equity injected</th><th>Threshold</th><th>Allowed spend</th><th>Actual spend</th><th>Headroom</th></tr></thead>
@@ -142,7 +142,7 @@
   </div>
 
   <div class="panel">
-    <h2><span class="title-flex">Adjusted EBT by Season<span class="hint-small">amortisation pulled live from the squad tracker, truncated at any recorded sale date</span></span></h2>
+    <h2><span class="title-flex">Adjusted EBT by Season<span class="hint-small">Championship / Premier League only — not applicable while in League One</span></span></h2>
     <div style="overflow-x:auto;">
       <table id="ebtTable">
         <thead><tr><th>Season</th><th>Revenue</th><th>Wages</th><th>Amortisation</th><th>Other opex</th><th>Trading P/L</th><th>Add-backs</th><th>Adjusted EBT</th></tr></thead>
@@ -174,6 +174,7 @@
   <div class="notes">
     <h3>Basis &amp; limitations</h3>
     <ul>
+      <li><strong style="color:var(--text);">P&amp;S/SCR and SCMP are mutually exclusive by division.</strong> The rolling three-year Adjusted EBT test only applies in the Championship and Premier League; League One and League Two run on SCMP instead — a single-season wages-vs-turnover test with no rolling component. Set each season's "Level" in the Season Inputs table and the tool greys out whichever panel doesn't apply that year.</li>
       <li>Adjusted EBT here = Revenue − Wages − Amortisation − Other opex + Player trading profit/loss + Add-backs. Real statutory accounts also net off interest, player loan income, and other smaller lines not modelled here — treat this as directional, not audit-ready.</li>
       <li>Amortisation per season is computed live from the squad tracker's contract data, and is truncated at a player's recorded sale date so no further charge accrues after disposal — new signings added to the squad tracker will automatically flow through here.</li>
       <li>Seasons run 1 July–30 June, matching the contract expiry convention in your data. If Leicester's actual financial year end differs, the season attribution of amortisation and disposals will need adjusting.</li>
@@ -328,7 +329,8 @@ function ensureSeasonInputs(labels){
       psrData.seasonInputs[l] = {
         revenue:0, wages:0, otherOpex:0, addBacks:0,
         managerCosts:0, equityInjected:0,
-        scmpThresholdPct: (l === currentLabel ? 65 : 50)
+        scmpThresholdPct: (l === currentLabel ? 65 : 50),
+        level: 'League One'
       };
     }
     // backfill fields for seasons created before this update
@@ -336,7 +338,13 @@ function ensureSeasonInputs(labels){
     if(s.managerCosts === undefined) s.managerCosts = 0;
     if(s.equityInjected === undefined) s.equityInjected = 0;
     if(s.scmpThresholdPct === undefined) s.scmpThresholdPct = (l === currentLabel ? 65 : 50);
+    if(s.level === undefined) s.level = 'League One';
   });
+}
+
+function regimeFor(level){
+  // League One / League Two run SCMP only. Championship and Premier League run P&S / SCR — not SCMP.
+  return (level === 'League One' || level === 'League Two') ? 'SCMP' : 'P&S';
 }
 
 function liveWageBill(label){
@@ -406,11 +414,17 @@ function renderTxTable(){
 
 function renderSeasonInputs(labels){
   const tbody = document.getElementById('seasonInputBody');
+  const levels = ['Premier League','Championship','League One','League Two'];
   tbody.innerHTML = labels.map(l => {
     const s = psrData.seasonInputs[l];
     const live = liveWageBill(l);
     return `<tr>
       <td style="text-align:left;">${l}</td>
+      <td>
+        <select class="si-level" data-season="${l}">
+          ${levels.map(lv => `<option value="${lv}" ${s.level===lv?'selected':''}>${lv}</option>`).join('')}
+        </select>
+      </td>
       <td><input type="number" class="si" data-season="${l}" data-field="revenue" value="${s.revenue}" step="100000"></td>
       <td>
         <input type="number" class="si" data-season="${l}" data-field="wages" value="${s.wages}" step="100000">
@@ -420,6 +434,14 @@ function renderSeasonInputs(labels){
       <td><input type="number" class="si" data-season="${l}" data-field="addBacks" value="${s.addBacks}" step="100000"></td>
     </tr>`;
   }).join('');
+  tbody.querySelectorAll('.si-level').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      psrData.seasonInputs[sel.dataset.season].level = sel.value;
+      await persist();
+      renderScmp(labels);
+      renderEbt(labels);
+    });
+  });
   tbody.querySelectorAll('.si').forEach(inp => {
     inp.addEventListener('change', async () => {
       const l = inp.dataset.season, f = inp.dataset.field;
@@ -447,12 +469,14 @@ function renderScmp(labels){
   const tbody = document.getElementById('scmpBody');
   tbody.innerHTML = labels.map(l => {
     const s = psrData.seasonInputs[l];
+    const applies = regimeFor(s.level) === 'SCMP';
     const allowed = (s.scmpThresholdPct/100) * s.revenue + 0.5 * s.equityInjected;
     const actual = s.wages + s.managerCosts;
     const headroom = allowed - actual;
     const pass = headroom >= 0;
-    return `<tr>
-      <td style="text-align:left;">${l}</td>
+    const dim = applies ? '' : 'opacity:0.4;';
+    return `<tr style="${dim}">
+      <td style="text-align:left;">${l}${applies?'':' <span style="color:var(--muted-2);font-size:10px;">— '+s.level+', not SCMP</span>'}</td>
       <td>${fmtGBP(s.revenue)}</td>
       <td>${fmtGBP(s.wages)}</td>
       <td><input type="number" class="scmp-in" data-season="${l}" data-field="managerCosts" value="${s.managerCosts}" step="10000"></td>
@@ -510,8 +534,11 @@ function renderEbt(labels){
   const tbody = document.getElementById('ebtBody');
   tbody.innerHTML = labels.map(l => {
     const e = adjustedEbt(l);
-    return `<tr>
-      <td style="text-align:left;">${l}</td>
+    const s = psrData.seasonInputs[l];
+    const applies = regimeFor(s.level) === 'P&S';
+    const dim = applies ? '' : 'opacity:0.4;';
+    return `<tr style="${dim}">
+      <td style="text-align:left;">${l}${applies?'':' <span style="color:var(--muted-2);font-size:10px;">— '+s.level+', not P&S</span>'}</td>
       <td>${fmtGBP(e.revenue)}</td>
       <td>${fmtGBP(e.wages)}</td>
       <td>${fmtGBP(e.amort)}</td>
