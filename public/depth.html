@@ -27,8 +27,52 @@
   .top-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
   button.mini{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 12px;border-radius:var(--radius);font-family:'IBM Plex Mono',monospace;font-size:11.5px;cursor:pointer;}
   button.mini:hover{border-color:var(--gold);color:var(--gold);}
+  button.mini.active{border-color:var(--gold);color:var(--gold);background:rgba(201,154,75,0.08);}
   .toast{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal);opacity:0;transition:opacity .3s;}
   .toast.show{opacity:1;}
+
+  /* avatar */
+  .avatar{
+    width:40px;height:40px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#0F1720;
+    background:var(--gold);object-fit:cover;overflow:hidden;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .avatar-sm{width:28px;height:28px;font-size:11px;}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .card-head .card-name{margin-bottom:0;}
+
+  /* pitch view */
+  .pitch-wrap{position:relative;width:100%;max-width:560px;margin:0 auto 24px;aspect-ratio:2/3;
+    background:linear-gradient(180deg,#1a3a24 0%,#173420 50%,#1a3a24 100%);
+    border:2px solid rgba(255,255,255,0.25);border-radius:6px;overflow:hidden;}
+  .pitch-wrap::before{content:"";position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.25);}
+  .pitch-wrap::after{content:"";position:absolute;top:50%;left:50%;width:80px;height:80px;margin:-40px 0 0 -40px;
+    border:1px solid rgba(255,255,255,0.25);border-radius:50%;}
+  .pitch-box-top, .pitch-box-bottom{position:absolute;left:25%;width:50%;height:14%;border:1px solid rgba(255,255,255,0.25);}
+  .pitch-box-top{top:0;border-top:none;}
+  .pitch-box-bottom{bottom:0;border-bottom:none;}
+  .pitch-cluster{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .pitch-chip{
+    display:flex;align-items:center;gap:6px;background:rgba(15,23,32,0.88);border:1px solid var(--border);
+    border-radius:20px;padding:3px 10px 3px 3px;cursor:pointer;white-space:nowrap;
+  }
+  .pitch-chip:hover{border-color:var(--gold);}
+  .pitch-chip.vacant-chip{background:rgba(15,23,32,0.5);border-style:dashed;color:var(--muted-2);padding:6px 12px;}
+  .pitch-chip .pc-name{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text);}
+  .pitch-chip .pc-choice{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--muted-2);}
+  .pitch-label-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;}
+  .pitch-unassigned{margin-top:10px;padding-top:14px;border-top:1px dashed var(--border);}
+  .pitch-unassigned-grid{display:flex;gap:10px;flex-wrap:wrap;}
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(15,23,32,0.75);display:flex;align-items:center;justify-content:center;
+    z-index:100;padding:20px;
+  }
+  .modal-box{background:var(--panel);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:22px;width:100%;max-width:380px;max-height:85vh;overflow-y:auto;}
+  .modal-box h3{font-family:'Space Grotesk',sans-serif;font-size:14px;margin:0 0 14px;}
 
   .legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:22px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
   .legend span.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
@@ -151,6 +195,9 @@
   <div class="top-actions">
     <button class="mini" id="resetBtn">Reset to uploaded data</button>
     <button class="mini" id="addPositionBtn">+ Add position row</button>
+    <span style="width:1px;height:18px;background:var(--border);margin:0 4px;"></span>
+    <button class="mini active" id="viewListBtn">List view</button>
+    <button class="mini" id="viewPitchBtn">Pitch view</button>
     <span class="toast" id="saveToast">saved</span>
   </div>
 
@@ -163,6 +210,8 @@
   </div>
 
   <div id="depthChart"></div>
+  <div id="pitchView" style="display:none;"></div>
+  <div id="modalRoot"></div>
 
   <div class="out-section">
     <div class="position-label">Out — Departed, Listed &amp; Loan-Bound</div>
@@ -174,6 +223,8 @@
     <ul>
       <li>This page is fully editable and saves to your own storage — click any card, filled or vacant, to edit or clear it. Changes persist across sessions in the same way as the Squad Book Value and PSR Ledger tools.</li>
       <li><strong style="color:var(--text);">Drag any card onto another</strong> — within a row or across different position rows — to swap who occupies each slot. The "1st/2nd/3rd choice" label stays fixed to the slot; only the player data moves, so dragging your 2nd-choice left-back onto the 1st-choice slot promotes them and demotes the other player in one move. Works with vacant slots too.</li>
+      <li><strong style="color:var(--text);">Flags and photos:</strong> nationality flags render automatically from the nationality field. Photos need a URL you paste in yourself under "Photo URL" in the edit form — I can't source or embed real player photos directly, since that runs into copyright (club/photographer-owned images) regardless of framing. Without a URL, players get a generated initials avatar instead.</li>
+      <li><strong style="color:var(--text);">Pitch view</strong> maps each position row onto a formation-shaped layout by matching keywords in the row's label (e.g. "Right Back" → right-back spot). Renaming a row to something the matcher doesn't recognise drops it into an "Unmapped" strip below the pitch — rename it back toward football terminology to restore its position. Drag-and-drop only works in list view for now.</li>
       <li>CA (Current Ability) is FM's internal ability rating, useful for relative squad-strength comparison but not a real-world scouting metric.</li>
       <li>Several players in the Out list are the same names tracked in the Squad Book Value tool. Worth checking whether any need a disposal entry in the PSR Ledger once fees are confirmed, since their book values keep amortising until recorded as sold.</li>
       <li>Vacant slots reflect depth-chart placeholders for uncovered positions/roles, not an assertion that no player can play there.</li>
@@ -185,6 +236,44 @@
 const fmtGBP = (v) => v ? '£' + Number(v).toLocaleString('en-GB') : '—';
 const STATUS_LABELS = { CT:'CT', AT:'AT', U21:'U21', IN:'IN', TBC:'TBC' };
 const STATUS_OPTIONS = ['CT','AT','U21','IN','TBC'];
+
+const COUNTRY_ISO = {
+  'england':'GB','scotland':'GB','wales':'GB','northern ireland':'GB',
+  'poland':'PL','bosnia and herzegovina':'BA','ghana':'GH','denmark':'DK','belgium':'BE',
+  'italy':'IT','australia':'AU','jamaica':'JM','spain':'ES','mali':'ML','bangladesh':'BD',
+  'czechia':'CZ','republic of ireland':'IE','ireland':'IE','finland':'FI','canada':'CA',
+  'south africa':'ZA','latvia':'LV','hungary':'HU','nigeria':'NG','thailand':'TH','zimbabwe':'ZW',
+  'france':'FR','germany':'DE','netherlands':'NL','portugal':'PT','brazil':'BR','argentina':'AR',
+  'usa':'US','united states':'US','japan':'JP','sweden':'SE','norway':'NO','austria':'AT',
+  'switzerland':'CH','turkey':'TR','morocco':'MA','senegal':'SN','ivory coast':'CI','egypt':'EG',
+  'greece':'GR','croatia':'HR','serbia':'RS','ukraine':'UA','iceland':'IS'
+};
+function flagEmoji(nationality){
+  if(!nationality) return '';
+  const key = nationality.trim().toLowerCase();
+  const iso = COUNTRY_ISO[key];
+  if(!iso) return '';
+  return iso.split('').map(c => String.fromCodePoint(127397 + c.charCodeAt(0))).join('');
+}
+
+const AVATAR_COLORS = ['#C99A4B','#4FA88F','#5B8DBF','#C1584A','#8A7043','#7A6BA8'];
+function avatarColor(name){
+  let hash = 0;
+  for(let i=0;i<(name||'').length;i++) hash = name.charCodeAt(i) + ((hash<<5)-hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+function initials(name){
+  if(!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0]||'') + (parts[parts.length-1]?.[0]||'')).toUpperCase();
+}
+function avatarHtml(name, photoUrl, sizeClass){
+  const cls = 'avatar' + (sizeClass ? ' ' + sizeClass : '');
+  if(photoUrl){
+    return `<div class="${cls}"><img src="${photoUrl.replace(/"/g,'&quot;')}" alt="" onerror="this.parentElement.innerHTML='${initials(name)}';this.parentElement.style.background='${avatarColor(name)}';"></div>`;
+  }
+  return `<div class="${cls}" style="background:${avatarColor(name)};">${initials(name)}</div>`;
+}
 
 const ORIGINAL_DATA = {
   positions: [
@@ -300,6 +389,8 @@ function slotEditForm(posIdx, slotIdx, slot){
     <div class="edit-form">
       <label>Player name (blank = vacant)</label>
       <input type="text" data-f="name" value="${(s.name||'').replace(/"/g,'&quot;')}" placeholder="Vacant slot label if empty">
+      <label>Photo URL <span style="color:var(--muted-2);text-transform:none;">(optional — link to an image you have rights to use; falls back to initials)</span></label>
+      <input type="text" data-f="photoUrl" value="${(s.photoUrl||'').replace(/"/g,'&quot;')}" placeholder="https://...">
       <div class="two-col">
         <div><label>Squad #</label><input type="number" data-f="squadNo" value="${s.squadNo||''}"></div>
         <div><label>Status</label><select data-f="status">${statusOptionsHtml(s.status||'TBC')}</select></div>
@@ -342,6 +433,7 @@ function readSlotForm(container){
   return {
     choice: container.dataset.choice,
     name,
+    photoUrl: get('photoUrl') || undefined,
     squadNo: get('squadNo') ? parseInt(get('squadNo')) : undefined,
     status: get('status'),
     contractYear: get('contractYear') ? parseInt(get('contractYear')) : undefined,
@@ -376,8 +468,14 @@ function slotCard(posIdx, slotIdx, slot){
     <div class="card" data-key="${key}" draggable="true">
       <span class="choice-badge"><span>${slot.choice} choice${slot.squadNo ? ' · #'+slot.squadNo : ''}</span></span>
       <div class="card-wage">${fmtGBP(slot.wage)}</div>
-      <div class="card-name">${slot.name}${slot.captain ? ' <span style="color:var(--gold);font-size:11px;">('+slot.captain+')</span>' : ''}</div>
-      <div class="card-meta">${slot.age ? slot.age+'y' : ''} ${slot.nationality || ''}${altPos}</div>
+      <div class="card-head">
+        ${avatarHtml(slot.name, slot.photoUrl)}
+        <div>
+          <div class="card-name">${slot.name}${slot.captain ? ' <span style="color:var(--gold);font-size:11px;">('+slot.captain+')</span>' : ''}</div>
+          <div class="card-meta" style="margin-bottom:0;">${flagEmoji(slot.nationality)} ${slot.age ? slot.age+'y' : ''} ${slot.nationality || ''}</div>
+        </div>
+      </div>
+      <div class="card-meta">${altPos}</div>
       <div class="card-stats">
         <div class="stat"><span class="n">${slot.ca || '—'}</span><span class="l">CA</span></div>
         <div class="stat"><span class="n">${slot.contractYear || '—'}</span><span class="l">Until</span></div>
@@ -394,6 +492,8 @@ function outEditForm(idx, p){
     <div class="edit-form">
       <label>Player name</label>
       <input type="text" data-f="name" value="${(s.name||'').replace(/"/g,'&quot;')}">
+      <label>Photo URL <span style="color:var(--muted-2);text-transform:none;">(optional)</span></label>
+      <input type="text" data-f="photoUrl" value="${(s.photoUrl||'').replace(/"/g,'&quot;')}" placeholder="https://...">
       <div class="two-col">
         <div><label>Squad #</label><input type="number" data-f="squadNo" value="${s.squadNo||''}"></div>
         <div><label>Position</label><input type="text" data-f="pos" value="${(s.pos||'').replace(/"/g,'&quot;')}" placeholder="e.g. DC(R)"></div>
@@ -424,6 +524,7 @@ function readOutForm(container){
   const get = f => container.querySelector(`[data-f="${f}"]`).value;
   return {
     name: get('name') || 'Unnamed',
+    photoUrl: get('photoUrl') || undefined,
     squadNo: get('squadNo') ? parseInt(get('squadNo')) : undefined,
     pos: get('pos') || undefined,
     contractYear: get('contractYear') ? parseInt(get('contractYear')) : undefined,
@@ -445,11 +546,133 @@ function outCard(idx, p){
   return `
     <div class="out-card" data-key="${key}">
       <span class="pos-tag">${p.pos || '—'}${p.alt ? ' / '+p.alt : ''}${p.squadNo ? ' · #'+p.squadNo : ''}</span>
-      <div class="card-name">${p.name}</div>
-      <div class="card-meta">${p.age?p.age+'y':''} ${p.nationality||''} ${p.ca?'· CA '+p.ca:''} ${p.contractYear?'· until '+p.contractYear:''}</div>
+      <div class="card-head">
+        ${avatarHtml(p.name, p.photoUrl, 'avatar-sm')}
+        <div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-meta" style="margin-bottom:0;">${flagEmoji(p.nationality)} ${p.age?p.age+'y':''} ${p.nationality||''} ${p.ca?'· CA '+p.ca:''} ${p.contractYear?'· until '+p.contractYear:''}</div>
+        </div>
+      </div>
       ${p.note ? `<div class="card-note">${p.note}</div>` : ''}
     </div>
   `;
+}
+
+let currentView = 'list';
+
+const POSITION_COORDS = [
+  { test: /goalkeeper|^gk/i, x:50, y:92 },
+  { test: /right back|\bdr\b/i, x:85, y:74 },
+  { test: /centre back \(right|right-sided cb|\bdc\(r\)/i, x:63, y:80 },
+  { test: /centre back \(left|left-sided cb|\bdc\(l\)/i, x:37, y:80 },
+  { test: /left back|\bdl\b/i, x:15, y:74 },
+  { test: /defensive midfield|\bdm\b/i, x:50, y:58 },
+  { test: /central midfield \(right|mc\(r\)/i, x:68, y:44 },
+  { test: /central midfield \(left|mc\(l\)/i, x:32, y:44 },
+  { test: /right wing|\bamr\b/i, x:85, y:26 },
+  { test: /left wing|\baml\b/i, x:15, y:26 },
+  { test: /striker|\bsc\b/i, x:50, y:10 }
+];
+function coordsForLabel(label){
+  for(const p of POSITION_COORDS){ if(p.test.test(label)) return { x:p.x, y:p.y }; }
+  return null;
+}
+
+function pitchChip(posIdx, slotIdx, slot){
+  const key = `pos-${posIdx}-${slotIdx}`;
+  if(slot.vacant){
+    return `<div class="pitch-chip vacant-chip" data-key="${key}">TBC</div>`;
+  }
+  return `
+    <div class="pitch-chip" data-key="${key}">
+      ${avatarHtml(slot.name, slot.photoUrl, 'avatar-sm')}
+      <div>
+        <div class="pc-name">${flagEmoji(slot.nationality)} ${slot.name}</div>
+        <div class="pc-choice">${slot.choice}${slot.squadNo ? ' · #'+slot.squadNo : ''}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPitch(){
+  const el = document.getElementById('pitchView');
+  const mapped = [];
+  const unmapped = [];
+  depthData.positions.forEach((row, posIdx) => {
+    const c = coordsForLabel(row.label);
+    if(c) mapped.push({ row, posIdx, c }); else unmapped.push({ row, posIdx });
+  });
+
+  const clusters = mapped.map(({row, posIdx, c}) => `
+    <div class="pitch-cluster" style="left:${c.x}%;top:${c.y}%;">
+      <div class="pitch-label-tag">${row.label}</div>
+      ${row.slots.map((slot, slotIdx) => pitchChip(posIdx, slotIdx, slot)).join('')}
+    </div>
+  `).join('');
+
+  const unmappedHtml = unmapped.length ? `
+    <div class="pitch-unassigned">
+      <div class="position-label">Unmapped position rows <span style="font-size:9.5px;color:var(--muted-2);text-transform:none;">(label doesn't match a pitch spot — edit the row name in list view to map it)</span></div>
+      <div class="pitch-unassigned-grid">
+        ${unmapped.map(({row, posIdx}) => row.slots.map((slot, slotIdx) => pitchChip(posIdx, slotIdx, slot)).join('')).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  el.innerHTML = `
+    <div class="pitch-wrap">
+      <div class="pitch-box-top"></div>
+      <div class="pitch-box-bottom"></div>
+      ${clusters}
+    </div>
+    ${unmappedHtml}
+  `;
+
+  el.querySelectorAll('.pitch-chip[data-key]').forEach(chip => {
+    chip.addEventListener('click', () => openSlotModal(chip.dataset.key));
+  });
+}
+
+function openSlotModal(key){
+  const [, posIdx, slotIdx] = key.split('-');
+  const slot = depthData.positions[posIdx].slots[slotIdx];
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div class="modal-box" id="modalBox" data-choice="${slot.choice}">
+        <h3>${depthData.positions[posIdx].label} — ${slot.choice} choice</h3>
+        ${slotEditForm(posIdx, slotIdx, slot)}
+      </div>
+    </div>
+  `;
+  const box = document.getElementById('modalBox');
+  const commit = async () => {
+    depthData.positions[posIdx].slots[slotIdx] = readSlotForm(box);
+    closeModal();
+    await persist();
+    renderPitch();
+  };
+  box.querySelector('[data-done]').addEventListener('click', commit);
+  box.querySelector('[data-vacate]').addEventListener('click', async () => {
+    depthData.positions[posIdx].slots[slotIdx] = { choice: slot.choice, vacant:true, label:'Vacant' };
+    closeModal();
+    await persist();
+    renderPitch();
+  });
+  box.querySelector('[data-remove-slot]').addEventListener('click', async () => {
+    depthData.positions[posIdx].slots.splice(slotIdx, 1);
+    closeModal();
+    await persist();
+    renderPitch();
+  });
+  document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+    if(e.target.id === 'modalBackdrop') closeModal();
+  });
+  box.addEventListener('click', e => e.stopPropagation());
+}
+
+function closeModal(){
+  document.getElementById('modalRoot').innerHTML = '';
 }
 
 function render(){
@@ -472,6 +695,8 @@ function render(){
   document.getElementById('outGrid').innerHTML =
     depthData.out.map((p, idx) => outCard(idx, p)).join('') +
     `<div class="add-out-card" id="addOutBtn">+ Add player to Out list</div>`;
+
+  if(currentView === 'pitch') renderPitch();
 
   wireEvents();
 }
@@ -620,6 +845,22 @@ function wireEvents(){
     render();
   });
 }
+
+document.getElementById('viewListBtn').addEventListener('click', () => {
+  currentView = 'list';
+  document.getElementById('viewListBtn').classList.add('active');
+  document.getElementById('viewPitchBtn').classList.remove('active');
+  document.getElementById('depthChart').style.display = '';
+  document.getElementById('pitchView').style.display = 'none';
+});
+document.getElementById('viewPitchBtn').addEventListener('click', () => {
+  currentView = 'pitch';
+  document.getElementById('viewPitchBtn').classList.add('active');
+  document.getElementById('viewListBtn').classList.remove('active');
+  document.getElementById('depthChart').style.display = 'none';
+  document.getElementById('pitchView').style.display = '';
+  renderPitch();
+});
 
 init();
 </script>
