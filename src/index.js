@@ -1,6 +1,7 @@
 const ROUTES = {
   '/api/squad': 'lcfc-squad-data',
-  '/api/psr': 'lcfc-psr-data'
+  '/api/psr': 'lcfc-psr-data',
+  '/api/depth': 'lcfc-depth-data'
 };
 
 async function handleKvRoute(request, env, key) {
