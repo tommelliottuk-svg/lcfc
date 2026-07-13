@@ -1,1 +1,530 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LCFC Squad Book Value &amp; PSR Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1720; --panel:#161F2A; --panel-2:#1B2530; --border:#28333F;
+    --text:#E8EDF2; --muted:#8B98A5; --muted-2:#5E6B78;
+    --gold:#C99A4B; --gold-dim:#8A7043; --teal:#4FA88F; --clay:#C1584A;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;}
+  .wrap{max-width:1240px;margin:0 auto;padding:32px 24px 64px;}
 
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:600;margin:0;letter-spacing:-0.01em;}
+  .subhead{color:var(--muted);font-size:13px;max-width:560px;margin-top:6px;}
+  .today-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);text-align:right;}
+  .today-badge strong{color:var(--text);display:block;font-size:14px;margin-top:2px;}
+
+  .totals-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .total-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  .total-card .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+  .total-card .v{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:600;color:var(--gold);margin-top:6px;}
+  @media (max-width:800px){ .totals-row{grid-template-columns:repeat(2,1fr);} }
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+  .panel + .panel{margin-top:20px;}
+  .panel h2{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 14px;display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  .panel h2 .title-flex{display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:"";width:3px;height:14px;background:var(--gold);display:inline-block;}
+  .panel h2 .hint-small{font-family:'Inter',sans-serif;font-size:11px;color:var(--muted-2);text-transform:none;letter-spacing:0;font-weight:400;}
+
+  table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  thead th{text-align:right;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding:8px 10px;border-bottom:1px solid var(--border);font-weight:500;cursor:pointer;user-select:none;white-space:nowrap;}
+  thead th:hover{color:var(--gold);}
+  thead th:first-child, tbody td:first-child{text-align:left;}
+  thead th .arrow{font-size:9px;margin-left:3px;color:var(--gold);}
+  tbody td{padding:9px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text);}
+  tbody tr{cursor:pointer;}
+  tbody tr:hover{background:rgba(255,255,255,0.03);}
+  tbody tr.selected{background:rgba(201,154,75,0.08);outline:1px solid var(--gold-dim);outline-offset:-1px;}
+  .player-name{font-family:'Inter',sans-serif;font-weight:500;font-size:13px;color:var(--text);}
+  .free-tag{font-size:9.5px;color:var(--muted-2);margin-left:6px;text-transform:uppercase;}
+  .renewal-count{font-size:10px;color:var(--gold);}
+
+  button.mini{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:var(--radius);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;}
+  button.mini:hover{border-color:var(--gold);color:var(--gold);}
+
+  /* Detail editor */
+  .detail-empty{color:var(--muted-2);font-size:13px;text-align:center;padding:40px 0;}
+  .field{margin-bottom:12px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+  input[type="text"],input[type="number"],input[type="date"]{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:7px 9px;border-radius:var(--radius);
+  }
+  input:focus{outline:1px solid var(--gold);border-color:var(--gold);}
+
+  .renewal-row{border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px 2px;margin-bottom:8px;background:var(--panel-2);position:relative;}
+  .renewal-row .field-row{grid-template-columns:1fr 1fr 1fr;}
+  .remove-btn{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted-2);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;}
+  .remove-btn:hover{color:var(--clay);}
+  .renewal-label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--gold);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+  button.add-btn{width:100%;background:transparent;border:1px dashed var(--muted-2);color:var(--muted);padding:8px;border-radius:var(--radius);font-family:'IBM Plex Mono',monospace;font-size:11.5px;cursor:pointer;}
+  button.add-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+  .headline-card{background:linear-gradient(135deg,#1B2530 0%,#161F2A 100%);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+  .headline-label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+  .headline-value{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:var(--gold);letter-spacing:-0.01em;line-height:1;}
+  .stat-row{display:flex;gap:22px;margin-top:12px;flex-wrap:wrap;}
+  .stat .k{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+  .stat .v{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);margin-top:2px;}
+
+  svg{width:100%;height:auto;display:block;}
+  .axis-label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;fill:var(--muted-2);}
+  .grid-line{stroke:var(--border);stroke-width:1;}
+  .bv-line{fill:none;stroke:var(--gold);stroke-width:2;}
+  .bv-area{fill:url(#goldFade);}
+  .today-line{stroke:var(--teal);stroke-width:1.2;stroke-dasharray:3,3;}
+  .renewal-marker{fill:var(--clay);}
+
+  .save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+  .toast{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--teal);opacity:0;transition:opacity .3s;align-self:center;}
+  .toast.show{opacity:1;}
+
+  .notes{margin-top:20px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:14px;}
+  .notes h3{font-family:'Space Grotesk',sans-serif;font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text);margin:0 0 8px;}
+  .notes ul{margin:0;padding-left:16px;}
+  .notes li{margin-bottom:5px;}
+
+  .top-actions{display:flex;gap:10px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">Squad Cost &amp; PSR Tooling — Leicester City</div>
+      <h1>Squad Book Value &amp; PSR Tracker</h1>
+      <div class="subhead">Current amortised book value for every contracted player, drawn from Leicester City contract records, with re-amortisation applied on each renewal.</div>
+    </div>
+    <div class="today-badge">Valuation date<strong id="todayDisplay">—</strong></div>
+  </header>
+
+  <div class="totals-row" id="totalsRow"></div>
+
+  <div class="top-actions">
+    <button class="mini" id="resetBtn">Reset to uploaded data</button>
+    <button class="mini" id="addPlayerBtn">+ Add player</button>
+  </div>
+
+  <div class="panel">
+    <h2><span class="title-flex">Squad Ledger<span class="hint-small">click a player to edit &amp; drill in</span></span></h2>
+    <div style="overflow-x:auto;">
+      <table id="squadTable">
+        <thead>
+          <tr>
+            <th data-sort="name">Player <span class="arrow" data-arrow="name"></span></th>
+            <th data-sort="cost">Cost <span class="arrow" data-arrow="cost"></span></th>
+            <th data-sort="signed">Signed <span class="arrow" data-arrow="signed"></span></th>
+            <th data-sort="renewals">Renewals <span class="arrow" data-arrow="renewals"></span></th>
+            <th data-sort="charge">Annual charge <span class="arrow" data-arrow="charge"></span></th>
+            <th data-sort="remaining">Remaining <span class="arrow" data-arrow="remaining"></span></th>
+            <th data-sort="bookvalue">Book value <span class="arrow" data-arrow="bookvalue"></span></th>
+          </tr>
+        </thead>
+        <tbody id="squadBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="detailPanel">
+    <h2><span class="title-flex" id="detailTitle">Player Detail</span></h2>
+    <div id="detailContent"><div class="detail-empty">Select a player above to view and edit their amortisation schedule.</div></div>
+  </div>
+
+  <div class="notes">
+    <h3>Basis, source &amp; limitations</h3>
+    <ul>
+      <li>Source data: Leicester City contract records exported from the Football Manager database (transfer fee, currency, exchange rate, contract start/end/expiry per contract period). Fees in non-GBP currencies are converted at the recorded exchange rate.</li>
+      <li>These are FM database fees, not audited club accounts — treat as a working proxy for real book value, not the club's actual capitalised cost, particularly for deals with add-ons or agent fees the database doesn't separate out.</li>
+      <li>Players showing £0 cost are free transfers or academy graduates — any sale of these players is recognised as pure profit against PSR, which is correct treatment, not a data gap.</li>
+      <li>Renewal contract periods are re-amortised over the new remaining term from the point of signing, per standard EFL/Premier League club accounting treatment. No additional capitalised cost is assumed on renewal unless you add one manually.</li>
+      <li>Edits you make here are saved in your browser only (not shared, not sent anywhere) and will persist next time you open this file in the same browser. Use "Reset to uploaded data" to discard edits and reload the original export.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const fmtGBP = (v) => '£' + Math.round(v).toLocaleString('en-GB');
+function parseDate(s){ return new Date(s + 'T00:00:00'); }
+function yearsBetween(d1, d2){ return (d2 - d1) / (1000*60*60*24*365.25); }
+function addYears(date, years){ const d = new Date(date.getTime()); d.setTime(d.getTime() + years*365.25*24*60*60*1000); return d; }
+function fmtDate(d){ return d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}); }
+function fmtDateInput(d){ return d.toISOString().slice(0,10); }
+
+const ORIGINAL_DATA = {"Abdul Fatawu": {"fee": 14043360, "signDate": "2024-07-01", "initialLength": 5.0, "renewals": []}, "Asmir Begovi\u0107": {"fee": 0, "signDate": "2025-07-29", "initialLength": 0.92, "renewals": []}, "Bade Aluko": {"fee": 0, "signDate": "2023-07-01", "initialLength": 2.0, "renewals": [{"date": "2025-06-30", "newLength": 3.0, "extraCost": 0}]}, "Ben Nelson": {"fee": 0, "signDate": "2022-02-22", "initialLength": 2.35, "renewals": [{"date": "2023-12-08", "newLength": 3.56, "extraCost": 0}]}, "Bobby De Cordova-Reid": {"fee": 0, "signDate": "2024-07-06", "initialLength": 2.98, "renewals": []}, "Caleb Okoli": {"fee": 11234688, "signDate": "2024-07-09", "initialLength": 4.97, "renewals": []}, "Fran Vieites": {"fee": 0, "signDate": "2025-09-06", "initialLength": 1.81, "renewals": []}, "Hamza Choudhury": {"fee": 0, "signDate": "2023-06-05", "initialLength": 1.07, "renewals": [{"date": "2023-09-27", "newLength": 3.76, "extraCost": 0}]}, "Harry Souttar": {"fee": 15000000, "signDate": "2023-01-31", "initialLength": 5.41, "renewals": []}, "Harry Winks": {"fee": 10000000, "signDate": "2023-07-01", "initialLength": 3.0, "renewals": [{"date": "2024-07-01", "newLength": 3.0, "extraCost": 0}]}, "Jake Evans": {"fee": 0, "signDate": "2024-07-01", "initialLength": 2.0, "renewals": [{"date": "2025-10-20", "newLength": 2.69, "extraCost": 0}]}, "Jakub Stolarczyk": {"fee": 0, "signDate": "2022-08-15", "initialLength": 3.87, "renewals": [{"date": "2025-06-09", "newLength": 2.06, "extraCost": 0}]}, "Jannik Vestergaard": {"fee": 14000000, "signDate": "2021-08-13", "initialLength": 2.88, "renewals": [{"date": "2024-06-07", "newLength": 3.06, "extraCost": 0}]}, "Jayden Joseph": {"fee": 0, "signDate": "2022-07-01", "initialLength": 2.0, "renewals": [{"date": "2024-06-30", "newLength": 3.0, "extraCost": 0}]}, "Louis Page": {"fee": 0, "signDate": "2024-07-01", "initialLength": 2.0, "renewals": [{"date": "2025-09-22", "newLength": 2.77, "extraCost": 0}]}, "Luke Thomas": {"fee": 0, "signDate": "2020-08-25", "initialLength": 5.85, "renewals": [{"date": "2025-09-19", "newLength": 3.78, "extraCost": 0}]}, "Nathan Opoku": {"fee": 0, "signDate": "2023-01-31", "initialLength": 3.41, "renewals": [{"date": "2026-03-12", "newLength": 1.3, "extraCost": 0}]}, "Oliver Skipp": {"fee": 21000000, "signDate": "2024-08-19", "initialLength": 4.86, "renewals": []}, "Sammy Braybrooke": {"fee": 0, "signDate": "2023-02-16", "initialLength": 3.37, "renewals": [{"date": "2025-06-09", "newLength": 2.06, "extraCost": 0}]}, "Silko Thomas": {"fee": 0, "signDate": "2023-08-25", "initialLength": 1.85, "renewals": [{"date": "2025-06-09", "newLength": 1.06, "extraCost": 0}]}, "Stephy Mavididi": {"fee": 6481551, "signDate": "2023-07-31", "initialLength": 4.92, "renewals": []}, "Tom Wilson-Brown": {"fee": 0, "signDate": "2021-07-01", "initialLength": 2.0, "renewals": [{"date": "2022-12-20", "newLength": 2.53, "extraCost": 0}, {"date": "2023-02-02", "newLength": 3.41, "extraCost": 0}, {"date": "2026-06-30", "newLength": 1.0, "extraCost": 0}]}, "Victor Kristiansen": {"fee": 18018711, "signDate": "2023-01-20", "initialLength": 5.44, "renewals": []}, "Will Alves": {"fee": 0, "signDate": "2021-07-01", "initialLength": 2.0, "renewals": [{"date": "2022-10-02", "newLength": 2.74, "extraCost": 0}, {"date": "2024-08-09", "newLength": 3.89, "extraCost": 0}]}, "Wout Faes": {"fee": 12000000, "signDate": "2022-09-01", "initialLength": 4.83, "renewals": []}, "Woyo Coulibaly": {"fee": 3000000, "signDate": "2025-01-15", "initialLength": 4.45, "renewals": []}};
+
+let squadData = {};
+let sortKey = 'bookvalue';
+let sortDir = -1;
+let selectedPlayer = null;
+const today = new Date();
+
+function computeSchedule(cost, signDate, initialLength, renewals, valuationDate){
+  let segments = [{ start: signDate, life: initialLength, opening: cost }];
+  const sorted = [...renewals].sort((a,b)=>a.date-b.date);
+  for(const r of sorted){
+    const seg = segments[segments.length-1];
+    let elapsed = yearsBetween(seg.start, r.date);
+    elapsed = Math.max(0, Math.min(elapsed, seg.life));
+    const charge = seg.life > 0 ? seg.opening/seg.life : 0;
+    const bvAtRenewal = Math.max(0, seg.opening - charge*elapsed);
+    segments.push({ start: r.date, life: r.newLength, opening: bvAtRenewal + (r.extraCost||0) });
+  }
+  const cur = segments[segments.length-1];
+  let elapsedCur = yearsBetween(cur.start, valuationDate);
+  elapsedCur = Math.max(0, Math.min(elapsedCur, cur.life));
+  const curCharge = cur.life > 0 ? cur.opening/cur.life : 0;
+  const bookValue = Math.max(0, cur.opening - curCharge*elapsedCur);
+  const remainingYears = Math.max(0, cur.life - elapsedCur);
+  return { segments, bookValue, currentAnnualCharge: curCharge, remainingYears, valuationDate };
+}
+
+function playerSchedule(p){
+  const renewals = (p.renewals||[]).map(r => ({ date: parseDate(r.date), newLength: r.newLength, extraCost: r.extraCost||0 }));
+  return computeSchedule(p.fee, parseDate(p.signDate), p.initialLength, renewals, today);
+}
+
+async function init(){
+  document.getElementById('todayDisplay').textContent = fmtDate(today);
+  let stored = null;
+  try {
+    const res = await fetch('/api/squad');
+    if(res.ok){
+      const json = await res.json();
+      if(json && Object.keys(json).length) stored = json;
+    }
+  } catch(e){ /* no saved data yet, or running locally without the Function */ }
+  squadData = stored || JSON.parse(JSON.stringify(ORIGINAL_DATA));
+  render();
+}
+
+async function persist(){
+  try {
+    await fetch('/api/squad', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(squadData)
+    });
+    showToast();
+  } catch(e){ console.error('Storage error', e); }
+}
+
+function showToast(){
+  const t = document.getElementById('saveToast');
+  if(!t) return;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  squadData = JSON.parse(JSON.stringify(ORIGINAL_DATA));
+  selectedPlayer = null;
+  await persist();
+  render();
+});
+
+document.getElementById('addPlayerBtn').addEventListener('click', async () => {
+  let base = 'New Player';
+  let name = base, i = 1;
+  while(squadData[name]) { name = base + ' ' + (++i); }
+  squadData[name] = { fee: 0, signDate: fmtDateInput(today), initialLength: 4, renewals: [] };
+  selectedPlayer = name;
+  await persist();
+  render();
+});
+
+function computeTotals(){
+  let totalCost = 0, totalBV = 0, count = 0, fullyAmortised = 0;
+  Object.values(squadData).forEach(p => {
+    const s = playerSchedule(p);
+    totalCost += p.fee;
+    totalBV += s.bookValue;
+    count++;
+    if(s.bookValue <= 0.5) fullyAmortised++;
+  });
+  return { totalCost, totalBV, count, fullyAmortised };
+}
+
+function renderTotals(){
+  const t = computeTotals();
+  document.getElementById('totalsRow').innerHTML = `
+    <div class="total-card"><div class="k">Players tracked</div><div class="v" style="color:var(--text);">${t.count}</div></div>
+    <div class="total-card"><div class="k">Total capitalised cost</div><div class="v">${fmtGBP(t.totalCost)}</div></div>
+    <div class="total-card"><div class="k">Total current book value</div><div class="v">${fmtGBP(t.totalBV)}</div></div>
+    <div class="total-card"><div class="k">Fully amortised</div><div class="v" style="color:var(--teal);">${t.fullyAmortised}</div></div>
+  `;
+}
+
+function sortedEntries(){
+  const entries = Object.entries(squadData).map(([name, p]) => {
+    const s = playerSchedule(p);
+    return { name, p, s };
+  });
+  entries.sort((a,b) => {
+    let av, bv;
+    switch(sortKey){
+      case 'name': av=a.name; bv=b.name; return sortDir * av.localeCompare(bv);
+      case 'cost': av=a.p.fee; bv=b.p.fee; break;
+      case 'signed': av=a.p.signDate; bv=b.p.signDate; break;
+      case 'renewals': av=(a.p.renewals||[]).length; bv=(b.p.renewals||[]).length; break;
+      case 'charge': av=a.s.currentAnnualCharge; bv=b.s.currentAnnualCharge; break;
+      case 'remaining': av=a.s.remainingYears; bv=b.s.remainingYears; break;
+      case 'bookvalue': default: av=a.s.bookValue; bv=b.s.bookValue; break;
+    }
+    return sortDir * (av - bv);
+  });
+  return entries;
+}
+
+function renderTable(){
+  const tbody = document.getElementById('squadBody');
+  const entries = sortedEntries();
+  tbody.innerHTML = entries.map(({name, p, s}) => {
+    const isFree = p.fee === 0;
+    const remLabel = s.bookValue <= 0.5 ? 'Fully amortised' : `${Math.floor(s.remainingYears)}y ${Math.round((s.remainingYears - Math.floor(s.remainingYears))*12)}m`;
+    return `
+      <tr class="${selectedPlayer===name?'selected':''}" data-player="${name.replace(/"/g,'&quot;')}">
+        <td><span class="player-name">${name}</span>${isFree?'<span class="free-tag">free/academy</span>':''}</td>
+        <td>${fmtGBP(p.fee)}</td>
+        <td>${fmtDate(parseDate(p.signDate))}</td>
+        <td>${(p.renewals||[]).length ? `<span class="renewal-count">${p.renewals.length}×</span>` : '—'}</td>
+        <td>${fmtGBP(s.currentAnnualCharge)}</td>
+        <td>${remLabel}</td>
+        <td style="color:var(--gold);font-weight:600;">${fmtGBP(s.bookValue)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      selectedPlayer = tr.dataset.player;
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-arrow]').forEach(el => el.textContent = '');
+  const arrow = document.querySelector(`[data-arrow="${sortKey}"]`);
+  if(arrow) arrow.textContent = sortDir === 1 ? '▲' : '▼';
+}
+
+document.querySelectorAll('#squadTable thead th').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if(sortKey === key){ sortDir *= -1; } else { sortKey = key; sortDir = -1; }
+    renderTable();
+  });
+});
+
+function buildYearlyRows(schedule){
+  const rows = [];
+  schedule.segments.forEach((seg, idx) => {
+    const charge = seg.life > 0 ? seg.opening/seg.life : 0;
+    const fullYears = Math.ceil(seg.life);
+    let opening = seg.opening;
+    for(let y=0; y<fullYears; y++){
+      const periodStart = addYears(seg.start, y);
+      const yearsThisPeriod = Math.min(1, seg.life - y);
+      const closing = Math.max(0, opening - charge*yearsThisPeriod);
+      const periodEnd = addYears(seg.start, y + yearsThisPeriod);
+      const isRenewalStart = (y === 0 && idx > 0);
+      const isCurrent = (schedule.valuationDate >= periodStart && schedule.valuationDate < periodEnd) ||
+                         (idx === schedule.segments.length-1 && y === fullYears-1 && schedule.valuationDate >= periodEnd);
+      rows.push({ label: fmtDate(periodStart)+' – '+fmtDate(periodEnd), opening, charge: charge*yearsThisPeriod, closing, isRenewalStart, isCurrent });
+      opening = closing;
+    }
+  });
+  return rows;
+}
+
+function drawChart(schedule, containerEl){
+  const W = 820, H = 220, padL = 55, padR = 20, padT = 20, padB = 30;
+  let points = [];
+  schedule.segments.forEach(seg => {
+    const charge = seg.life > 0 ? seg.opening/seg.life : 0;
+    const steps = 24;
+    for(let i=0;i<=steps;i++){
+      const t = (seg.life*i)/steps;
+      points.push({ date: addYears(seg.start, t), value: Math.max(0, seg.opening - charge*t) });
+    }
+  });
+  if(points.length === 0){ containerEl.innerHTML = ''; return; }
+  const minDate = points[0].date, maxDate = points[points.length-1].date;
+  const maxVal = Math.max(...points.map(p=>p.value), 1);
+  const xScale = (d) => padL + (yearsBetween(minDate,d)/Math.max(0.001,yearsBetween(minDate,maxDate)))*(W-padL-padR);
+  const yScale = (v) => padT + (1 - v/maxVal)*(H-padT-padB);
+  let path = points.map((p,i)=>(i===0?'M':'L')+xScale(p.date).toFixed(1)+','+yScale(p.value).toFixed(1)).join(' ');
+  let areaPath = path + ` L${xScale(points[points.length-1].date).toFixed(1)},${yScale(0).toFixed(1)} L${xScale(points[0].date).toFixed(1)},${yScale(0).toFixed(1)} Z`;
+  let gridLines='', yLabels='';
+  for(let i=0;i<=4;i++){
+    const v = maxVal*i/4; const y = yScale(v);
+    gridLines += `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}"/>`;
+    yLabels += `<text class="axis-label" x="${padL-8}" y="${y+3}" text-anchor="end">${fmtGBP(v)}</text>`;
+  }
+  let xMarks = [minDate, ...schedule.segments.slice(1).map(s=>s.start), maxDate];
+  let xLabels = '';
+  xMarks.forEach(d => { const x = xScale(d); xLabels += `<text class="axis-label" x="${x}" y="${H-padB+16}" text-anchor="middle">${d.getFullYear()}</text>`; });
+  let renewalMarkers = '';
+  schedule.segments.slice(1).forEach(seg => { const x=xScale(seg.start); renewalMarkers += `<circle class="renewal-marker" cx="${x}" cy="${yScale(seg.opening)}" r="3.5"/>`; });
+  let todayX = Math.max(padL, Math.min(W-padR, xScale(schedule.valuationDate)));
+  const todayY = yScale(schedule.bookValue);
+  containerEl.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="goldFade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#C99A4B" stop-opacity="0.28"/><stop offset="100%" stop-color="#C99A4B" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${gridLines}<path class="bv-area" d="${areaPath}"/><path class="bv-line" d="${path}"/>
+      ${renewalMarkers}
+      <line class="today-line" x1="${todayX}" y1="${padT}" x2="${todayX}" y2="${H-padB}"/>
+      <circle cx="${todayX}" cy="${todayY}" r="4" fill="#4FA88F" stroke="#0F1720" stroke-width="1.5"/>
+      <text class="axis-label" x="${todayX}" y="${padT-6}" text-anchor="middle" fill="#4FA88F" font-size="10">TODAY</text>
+      ${yLabels}${xLabels}
+    </svg>
+  `;
+}
+
+function renderDetail(){
+  const titleEl = document.getElementById('detailTitle');
+  const content = document.getElementById('detailContent');
+  if(!selectedPlayer || !squadData[selectedPlayer]){
+    titleEl.textContent = 'Player Detail';
+    content.innerHTML = '<div class="detail-empty">Select a player above to view and edit their amortisation schedule.</div>';
+    return;
+  }
+  const p = squadData[selectedPlayer];
+  const s = playerSchedule(p);
+  titleEl.innerHTML = `${selectedPlayer} <span class="hint-small" style="margin-left:8px;">${fmtGBP(s.bookValue)} book value</span>`;
+
+  const renewalsHtml = (p.renewals||[]).map((r, idx) => `
+    <div class="renewal-row" data-ridx="${idx}">
+      <button class="remove-btn" data-remove-renewal="${idx}">remove ×</button>
+      <div class="renewal-label">Renewal ${idx+1}</div>
+      <div class="field-row">
+        <div class="field"><label>Date signed</label><input type="date" class="rn-date" value="${r.date}"></div>
+        <div class="field"><label>New length (yrs)</label><input type="number" class="rn-length" value="${r.newLength}" min="0.5" step="0.5"></div>
+        <div class="field"><label>Extra cost (£)</label><input type="number" class="rn-extra" value="${r.extraCost||0}" min="0" step="50000"></div>
+      </div>
+    </div>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="headline-card">
+      <div class="headline-label">Current book value — PSR break-even sale price</div>
+      <div class="headline-value">${fmtGBP(s.bookValue)}</div>
+      <div class="stat-row">
+        <div class="stat"><div class="k">Total cost</div><div class="v">${fmtGBP(p.fee + (p.renewals||[]).reduce((sum,r)=>sum+(r.extraCost||0),0))}</div></div>
+        <div class="stat"><div class="k">Annual charge</div><div class="v">${fmtGBP(s.currentAnnualCharge)}</div></div>
+        <div class="stat"><div class="k">Remaining</div><div class="v">${s.bookValue<=0.5?'Fully amortised':Math.floor(s.remainingYears)+'y '+Math.round((s.remainingYears-Math.floor(s.remainingYears))*12)+'m'}</div></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:22px;">
+      <div>
+        <div class="field-row">
+          <div class="field"><label>Player name</label><input type="text" id="editName" value="${selectedPlayer.replace(/"/g,'&quot;')}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Transfer fee (£)</label><input type="number" id="editFee" value="${p.fee}" min="0" step="50000"></div>
+          <div class="field"><label>Initial length (yrs)</label><input type="number" id="editLength" value="${p.initialLength}" min="0.1" step="0.5"></div>
+        </div>
+        <div class="field"><label>Date signed</label><input type="date" id="editSignDate" value="${p.signDate}"></div>
+
+        <div style="border-top:1px dashed var(--border);margin-top:12px;padding-top:12px;">
+          <div class="renewal-label" style="margin-bottom:8px;">Renewals</div>
+          ${renewalsHtml}
+          <button class="add-btn" id="addRenewalBtn">+ Add renewal</button>
+        </div>
+
+        <div class="save-row">
+          <span class="toast" id="saveToast">saved</span>
+          <button class="mini" id="deletePlayerBtn" style="border-color:var(--clay);color:var(--clay);">Delete player</button>
+        </div>
+      </div>
+      <div>
+        <div class="k" style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Book value trajectory</div>
+        <div id="chartWrap"></div>
+        <div style="overflow-x:auto;margin-top:14px;">
+          <table>
+            <thead><tr><th>Period</th><th>Opening</th><th>Charge</th><th>Closing</th></tr></thead>
+            <tbody>
+              ${buildYearlyRows(s).map(r => `
+                <tr style="${r.isCurrent?'outline:1px solid var(--teal);outline-offset:-1px;':''}${r.isRenewalStart?'background:rgba(201,154,75,0.06);':''}">
+                  <td>${r.label}</td><td>${fmtGBP(r.opening)}</td><td>${fmtGBP(r.charge)}</td><td>${fmtGBP(r.closing)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  drawChart(s, document.getElementById('chartWrap'));
+
+  const commit = async () => {
+    const newName = document.getElementById('editName').value.trim() || selectedPlayer;
+    const fee = parseFloat(document.getElementById('editFee').value) || 0;
+    const length = parseFloat(document.getElementById('editLength').value) || 0.5;
+    const signDate = document.getElementById('editSignDate').value;
+    const renewals = [];
+    content.querySelectorAll('.renewal-row').forEach(row => {
+      const date = row.querySelector('.rn-date').value;
+      const newLength = parseFloat(row.querySelector('.rn-length').value) || 0.5;
+      const extraCost = parseFloat(row.querySelector('.rn-extra').value) || 0;
+      if(date) renewals.push({ date, newLength, extraCost });
+    });
+    if(newName !== selectedPlayer){
+      delete squadData[selectedPlayer];
+      selectedPlayer = newName;
+    }
+    squadData[selectedPlayer] = { fee, signDate, initialLength: length, renewals };
+    await persist();
+    render();
+  };
+
+  content.querySelectorAll('#editName,#editFee,#editLength,#editSignDate,.rn-date,.rn-length,.rn-extra').forEach(el => {
+    el.addEventListener('change', commit);
+  });
+  content.querySelectorAll('[data-remove-renewal]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.removeRenewal);
+      squadData[selectedPlayer].renewals.splice(idx, 1);
+      await persist();
+      render();
+    });
+  });
+  document.getElementById('addRenewalBtn').addEventListener('click', async () => {
+    if(!squadData[selectedPlayer].renewals) squadData[selectedPlayer].renewals = [];
+    squadData[selectedPlayer].renewals.push({ date: fmtDateInput(today), newLength: 3, extraCost: 0 });
+    await persist();
+    render();
+  });
+  document.getElementById('deletePlayerBtn').addEventListener('click', async () => {
+    delete squadData[selectedPlayer];
+    selectedPlayer = null;
+    await persist();
+    render();
+  });
+}
+
+function render(){
+  renderTotals();
+  renderTable();
+  renderDetail();
+}
+
+init();
+</script>
+</body>
+</html>
